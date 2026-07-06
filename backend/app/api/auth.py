@@ -119,12 +119,14 @@ async def callback(request: Request, code: str = Query(...), state: str | None =
     if not user.calagopus_uuid:
         # Check if the user already exists in Calagopus by searching their external ID
         calagopus_uuid = None
+        calagopus_base_url = settings.CALAGOPUS_URL.rstrip("/")
+        calagopus_timeout = httpx.Timeout(20.0, connect=5.0)
         headers = {"Authorization": settings.CALAGOPUS_API_KEY, "Content-Type": "application/json"}
         
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=calagopus_timeout) as client:
             try:
                 # Retrieve by external ID
-                ext_url = f"{settings.CALAGOPUS_URL}/api/admin/users/external/discord_{discord_id}"
+                ext_url = f"{calagopus_base_url}/api/admin/users/external/discord_{discord_id}"
                 resp = await client.get(ext_url, headers=headers)
                 if resp.status_code == 200:
                     user_data = resp.json()
@@ -132,7 +134,7 @@ async def callback(request: Request, code: str = Query(...), state: str | None =
                     logger.info(f"Matched existing Calagopus user by external ID: {calagopus_uuid}")
                 else:
                     # If not found by external ID, try searching by email
-                    search_url = f"{settings.CALAGOPUS_URL}/api/admin/users?page=1&per_page=1&search={discord_email}"
+                    search_url = f"{calagopus_base_url}/api/admin/users?page=1&per_page=1&search={discord_email}"
                     resp = await client.get(search_url, headers=headers)
                     if resp.status_code == 200:
                         search_data = resp.json()
@@ -142,11 +144,13 @@ async def callback(request: Request, code: str = Query(...), state: str | None =
                             logger.info(f"Matched existing Calagopus user by email: {calagopus_uuid}")
                             
                             # Update their external ID on Calagopus side to link them permanently
-                            patch_url = f"{settings.CALAGOPUS_URL}/api/admin/users/{calagopus_uuid}"
+                            patch_url = f"{calagopus_base_url}/api/admin/users/{calagopus_uuid}"
                             patch_payload = {"external_id": f"discord_{discord_id}"}
                             await client.patch(patch_url, json=patch_payload, headers=headers)
-            except Exception as e:
-                logger.error(f"Calagopus lookup error: {e}")
+            except httpx.TimeoutException as e:
+                logger.error(f"Calagopus lookup timed out against {calagopus_base_url}: {e}")
+            except httpx.RequestError as e:
+                logger.error(f"Calagopus lookup request error against {calagopus_base_url}: {e}")
                 
         # If still not found, auto-create the Calagopus user
         if not calagopus_uuid:
@@ -160,19 +164,27 @@ async def callback(request: Request, code: str = Query(...), state: str | None =
                 "external_id": f"discord_{discord_id}",
                 "password": str(uuid.uuid4()) # Generate random secure password (dashboard uses OAuth)
             }
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=calagopus_timeout) as client:
                 try:
-                    resp = await client.post(f"{settings.CALAGOPUS_URL}/api/admin/users", json=create_payload, headers=headers)
+                    resp = await client.post(f"{calagopus_base_url}/api/admin/users", json=create_payload, headers=headers)
                     if resp.status_code == 201 or resp.status_code == 200:
                         user_data = resp.json()
                         calagopus_uuid = user_data.get("user", {}).get("uuid")
                         logger.info(f"Provisioned new Calagopus user: {calagopus_uuid}")
                     else:
                         logger.error(f"Failed to create Calagopus user: {resp.status_code} - {resp.text}")
-                        raise HTTPException(status_code=500, detail="Failed to sync account with game panel")
-                except Exception as e:
-                    logger.error(f"Calagopus creation network error: {e}")
-                    raise HTTPException(status_code=500, detail="Game panel sync timed out")
+                        raise HTTPException(
+                            status_code=502,
+                            detail=f"Failed to sync account with game panel ({resp.status_code})"
+                        )
+                except HTTPException:
+                    raise
+                except httpx.TimeoutException as e:
+                    logger.error(f"Calagopus creation timed out against {calagopus_base_url}: {e}")
+                    raise HTTPException(status_code=504, detail="Game panel sync timed out")
+                except httpx.RequestError as e:
+                    logger.error(f"Calagopus creation request error against {calagopus_base_url}: {e}")
+                    raise HTTPException(status_code=502, detail="Could not reach game panel")
                     
         # Update user with Calagopus UUID
         user.calagopus_uuid = calagopus_uuid

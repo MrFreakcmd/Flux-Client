@@ -42,7 +42,7 @@ BACKEND_PUBLIC_URL=http://localhost:8010
 SECRET_KEY=change-me
 
 # Calagopus
-CALAGOPUS_URL=https://panel.freakcloud.tk
+CALAGOPUS_URL=http://host.docker.internal:8080
 CALAGOPUS_API_KEY=your_admin_api_key
 
 # Discord OAuth
