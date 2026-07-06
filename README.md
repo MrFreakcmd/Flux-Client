@@ -67,6 +67,8 @@ REFERRAL_REWARD_COINS=5.0
 DRIFT_SYNC_INTERVAL_SECONDS=900
 ```
 
+`VITE_API_BASE_URL` is optional. Leave it blank for the default same-origin `/api` setup, or set it to a separate API domain if you want the frontend to talk to a different host.
+
 ## Local Setup
 
 ### 1. Backend
@@ -103,12 +105,11 @@ cd frontend
 npm install
 ```
 
-If you are running the frontend locally, make sure the API base URL points to the backend:
-
 ```powershell
-$env:VITE_API_BASE_URL="http://localhost:8000"
 npm run dev
 ```
+
+The Vite dev server proxies `/api` to `http://localhost:8000` by default, so you can leave `VITE_API_BASE_URL` unset for local development. Set it only if your API is on a different host.
 
 Production build:
 
@@ -126,6 +127,7 @@ npm run preview
 
 Docker Compose starts PostgreSQL, Redis, the backend, and the frontend together.
 This repository now expects the backend and frontend to be published as GitHub Container Registry images by the GitHub Actions workflow in `.github/workflows/publish-images.yml`.
+The frontend container proxies `/api` to the backend container, so the repo works out of the box with same-origin API calls.
 
 ```powershell
 docker compose pull
@@ -140,16 +142,17 @@ Services:
 - Redis: internal Docker network only
 
 If you want to pin a specific image version, set `FLUX_IMAGE_TAG` in your `.env` file to a commit SHA or release tag instead of `latest`.
+If you fork the repo and use your own GitHub Actions images, set `FLUX_GHCR_OWNER` to your GitHub username or organization. The compose file defaults to `blackbox-cmd` for the upstream project.
 
 ### GitHub Actions and GHCR
 
 The workflow publishes two images on every push to `main` or `master`:
 
-- `ghcr.io/blackbox-cmd/flux-client-backend`
-- `ghcr.io/blackbox-cmd/flux-client-frontend`
+- `ghcr.io/<repo-owner>/flux-client-backend`
+- `ghcr.io/<repo-owner>/flux-client-frontend`
 
-The frontend build needs a repository variable named `VITE_API_BASE_URL` in GitHub Settings.
-Set it to the same public API URL you use for `BACKEND_PUBLIC_URL`, for example `https://api.client.example.com`.
+The frontend build works with no repository variables. If you want the frontend to call a separate API domain, add `VITE_API_BASE_URL` as a repository variable and set it to that public API URL.
+The compose file pulls images from `ghcr.io/${FLUX_GHCR_OWNER}`.
 
 If the GHCR packages are private, log in on the VPS before pulling:
 
@@ -196,4 +199,4 @@ curl http://localhost:8000/health
 - If login redirects fail, verify `DISCORD_REDIRECT_URI`, `FRONTEND_URL`, and `BACKEND_PUBLIC_URL`.
 - If database imports fail, confirm `POSTGRES_*` values match your database service.
 - If Redis locks are timing out, check that Redis is reachable on the configured host and port.
-- If the frontend cannot reach the API, confirm `VITE_API_BASE_URL` and the backend port (`8010` by default in Docker).
+- If the frontend cannot reach the API, confirm the `/api` proxy is working or set `VITE_API_BASE_URL` only when you use a separate API host.
