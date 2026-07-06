@@ -37,8 +37,8 @@ REDIS_PORT=6379
 REDIS_DB=0
 
 # App URLs
-FRONTEND_URL=http://localhost:3000
-BACKEND_PUBLIC_URL=http://localhost:8000
+FRONTEND_URL=http://localhost:3010
+BACKEND_PUBLIC_URL=http://localhost:8010
 SECRET_KEY=change-me
 
 # Calagopus
@@ -48,7 +48,7 @@ CALAGOPUS_API_KEY=your_admin_api_key
 # Discord OAuth
 DISCORD_CLIENT_ID=your_discord_client_id
 DISCORD_CLIENT_SECRET=your_discord_client_secret
-DISCORD_REDIRECT_URI=http://localhost:8000/api/auth/callback
+DISCORD_REDIRECT_URI=http://localhost:8010/api/auth/callback
 
 # Optional security / integrations
 VPNAPI_KEY=
@@ -125,17 +125,39 @@ npm run preview
 ## Docker Setup
 
 Docker Compose starts PostgreSQL, Redis, the backend, and the frontend together.
+This repository now expects the backend and frontend to be published as GitHub Container Registry images by the GitHub Actions workflow in `.github/workflows/publish-images.yml`.
 
 ```powershell
-docker compose up --build
+docker compose pull
+docker compose up -d
 ```
 
 Services:
 
-- Backend: `http://localhost:8000`
-- Frontend: `http://localhost:3000`
-- PostgreSQL: `localhost:5432`
-- Redis: `localhost:6379`
+- Backend: `http://localhost:8010`
+- Frontend: `http://localhost:3010`
+- PostgreSQL: internal Docker network only
+- Redis: internal Docker network only
+
+If you want to pin a specific image version, set `FLUX_IMAGE_TAG` in your `.env` file to a commit SHA or release tag instead of `latest`.
+
+### GitHub Actions and GHCR
+
+The workflow publishes two images on every push to `main` or `master`:
+
+- `ghcr.io/blackbox-cmd/flux-client-backend`
+- `ghcr.io/blackbox-cmd/flux-client-frontend`
+
+The frontend build needs a repository variable named `VITE_API_BASE_URL` in GitHub Settings.
+Set it to the same public API URL you use for `BACKEND_PUBLIC_URL`, for example `https://api.client.example.com`.
+
+If the GHCR packages are private, log in on the VPS before pulling:
+
+```powershell
+docker login ghcr.io
+```
+
+Then use a GitHub PAT with `read:packages`.
 
 ## Running Tests
 
@@ -174,4 +196,4 @@ curl http://localhost:8000/health
 - If login redirects fail, verify `DISCORD_REDIRECT_URI`, `FRONTEND_URL`, and `BACKEND_PUBLIC_URL`.
 - If database imports fail, confirm `POSTGRES_*` values match your database service.
 - If Redis locks are timing out, check that Redis is reachable on the configured host and port.
-- If the frontend cannot reach the API, confirm `VITE_API_BASE_URL` and the backend port.
+- If the frontend cannot reach the API, confirm `VITE_API_BASE_URL` and the backend port (`8010` by default in Docker).
