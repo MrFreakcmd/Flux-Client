@@ -15,6 +15,7 @@ class User(Base):
     avatar = Column(String(255), nullable=True)
     coins = Column(Numeric(12, 2), default=0.00, nullable=False)
     is_admin = Column(Boolean, default=False, nullable=False)
+    is_suspended = Column(Boolean, default=False, nullable=False)
     limit_cpu = Column(Integer, default=100, nullable=False)      # % (100 = 1 core)
     limit_memory = Column(Integer, default=2048, nullable=False)  # MB (2GB default)
     limit_disk = Column(Integer, default=10000, nullable=False)   # MB (10GB default)
