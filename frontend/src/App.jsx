@@ -2,6 +2,9 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import Layout from './components/Layout'
 import { useAuth } from './context/AuthContext'
 import AccountPage from './pages/AccountPage'
+import AdminDashboardPage from './pages/AdminDashboardPage'
+import AdminUsersPage from './pages/AdminUsersPage'
+import AdminUserDetailsPage from './pages/AdminUserDetailsPage'
 import AnnouncementsPage from './pages/AnnouncementsPage'
 import AuthCallbackPage from './pages/AuthCallbackPage'
 import BillingPage from './pages/BillingPage'
@@ -29,6 +32,25 @@ function RequireAuth() {
   return <Layout />
 }
 
+function RequireAdmin() {
+  const { token, bootstrapping, user } = useAuth()
+  const location = useLocation()
+
+  if (bootstrapping) {
+    return <div className="splash-screen">Warming up the dashboard...</div>
+  }
+
+  if (!token) {
+    return <Navigate to="/" replace state={{ from: location }} />
+  }
+
+  if (!user?.is_admin) {
+    return <Navigate to="/dashboard" replace state={{ from: location }} />
+  }
+
+  return <Layout />
+}
+
 export default function App() {
   const { token } = useAuth()
 
@@ -47,6 +69,11 @@ export default function App() {
         <Route path="/images" element={<ImagesPage />} />
         <Route path="/announcements" element={<AnnouncementsPage />} />
         <Route path="/account" element={<AccountPage />} />
+      </Route>
+      <Route element={<RequireAdmin />}>
+        <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+        <Route path="/admin/users" element={<AdminUsersPage />} />
+        <Route path="/admin/users/:userId" element={<AdminUserDetailsPage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

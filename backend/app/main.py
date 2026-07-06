@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from app.config import settings
 from app.database import engine, Base
 from app.services.redis_service import redis_client
-from app.api import account, announcements, auth, community, earn, images, server, store, ticket, afk, billing, security, referrals
+from app.api import account, admin, announcements, auth, community, earn, images, server, store, ticket, afk, billing, security, referrals
 from app.tasks import drift_sync
 import logging
 
@@ -62,6 +62,7 @@ async def shutdown_event():
 
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
+app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(server.router, prefix="/api/servers", tags=["Server Management"])
 app.include_router(store.router, prefix="/api/store", tags=["Resource Store"])
 app.include_router(ticket.router, prefix="/api/tickets", tags=["Support Tickets"])

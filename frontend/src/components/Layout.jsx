@@ -38,6 +38,25 @@ export default function Layout() {
               {item.label}
             </NavLink>
           ))}
+
+          {user?.is_admin && (
+            <>
+              <div className="nav-divider" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', margin: '0.75rem 0' }} />
+              <p style={{ fontSize: '0.7rem', textTransform: 'uppercase', opacity: 0.5, padding: '0 0.5rem', margin: '0.25rem 0' }}>Admin</p>
+              <NavLink
+                to="/admin/dashboard"
+                className={({ isActive }) => `nav-link${isActive ? ' is-active' : ''}`}
+              >
+                Admin Dashboard
+              </NavLink>
+              <NavLink
+                to="/admin/users"
+                className={({ isActive }) => `nav-link${isActive ? ' is-active' : ''}`}
+              >
+                User Management
+              </NavLink>
+            </>
+          )}
         </nav>
 
         <div className="sidebar-footer">
