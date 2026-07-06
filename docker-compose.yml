@@ -28,7 +28,7 @@ services:
       retries: 5
 
   backend:
-    image: ghcr.io/blackbox-cmd/flux-client-backend:${FLUX_IMAGE_TAG:-latest}
+    image: ghcr.io/${FLUX_GHCR_OWNER:-blackbox-cmd}/flux-client-backend:${FLUX_IMAGE_TAG:-latest}
     pull_policy: always
     container_name: flux_backend
     restart: unless-stopped
@@ -65,7 +65,7 @@ services:
       - SMTP_FROM=${SMTP_FROM}
 
   frontend:
-    image: ghcr.io/blackbox-cmd/flux-client-frontend:${FLUX_IMAGE_TAG:-latest}
+    image: ghcr.io/${FLUX_GHCR_OWNER:-blackbox-cmd}/flux-client-frontend:${FLUX_IMAGE_TAG:-latest}
     pull_policy: always
     container_name: flux_frontend
     restart: unless-stopped
