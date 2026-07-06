@@ -1,13 +1,14 @@
 # Flux Client
 
-Flux Client is a dashboard for Calagopus with Discord OAuth, server management, coin balance tracking, support tickets, AFK rewards, referrals, billing, and a React frontend.
+Flux Client is a dashboard for Calagopus with Discord OAuth, server management, coin balance tracking, support tickets, AFK rewards, referrals, billing, and a modern React + TypeScript frontend.
 
 ## Project Layout
 
-- `backend/` FastAPI app, SQLAlchemy models, API routes, and background tasks
-- `frontend/` React + Vite dashboard
+- `backend/` FastAPI app, SQLAlchemy models, API routes, background tasks, and Alembic migrations
+- `frontend/` React 18 + TypeScript + Vite dashboard with full type safety
 - `docker-compose.yml` PostgreSQL, Redis, backend, and frontend services
 - `openapi.json` Calagopus OpenAPI schema used to generate client models
+- `frontend/migrations/` Alembic database migration versioning
 
 ## Requirements
 
@@ -96,6 +97,42 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 The backend will create tables on startup for local development.
 
+### 3. Database Migrations (Alembic)
+
+This project uses **Alembic** for database schema versioning. Migrations track all changes to the database schema and prevent drift between code and database.
+
+**Running Migrations:**
+
+```powershell
+cd backend
+# View migration status
+alembic current
+
+# Run all pending migrations
+alembic upgrade head
+
+# View migration history
+alembic history
+
+# Rollback one migration
+alembic downgrade -1
+```
+
+**Creating a New Migration:**
+
+After modifying SQLAlchemy models:
+
+```powershell
+cd backend
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+python -m alembic revision --autogenerate -m "Your migration message"
+```
+
+Review the generated migration file in `backend/migrations/versions/` and commit it with your code changes.
+
+See `backend/ALEMBIC_GUIDE.md` for detailed migration documentation.
+
 ### 2. Frontend
 
 From the repository root:
@@ -105,29 +142,44 @@ cd frontend
 npm install
 ```
 
+The frontend is now built with **TypeScript** for full type safety. Start the dev server:
+
 ```powershell
 npm run dev
 ```
 
 The Vite dev server proxies `/api` to `http://localhost:8000` by default, so you can leave `VITE_API_BASE_URL` unset for local development. Set it only if your API is on a different host.
 
-Production build:
+**TypeScript Development:**
 
 ```powershell
+# Type check (no build)
+npm run type-check
+
+# Build with type checking
 npm run build
-```
 
-Preview the built app:
-
-```powershell
+# Preview the built app
 npm run preview
 ```
+
+**Frontend Structure (TypeScript):**
+- `src/components/` — Reusable UI components (Button, Card, Badge, Input)
+- `src/pages/` — Route pages with full type safety
+- `src/hooks/` — Custom React hooks
+- `src/lib/` — Utilities (API client, helpers)
+- `src/context/` — React Context providers
+- `src/types/` — TypeScript type definitions
+- `tsconfig.json` — TypeScript config with path aliases (`@/`, `@components/`, etc.)
 
 ## Docker Setup
 
 Docker Compose starts PostgreSQL, Redis, the backend, and the frontend together.
 This repository now expects the backend and frontend to be published as GitHub Container Registry images by the GitHub Actions workflow in `.github/workflows/publish-images.yml`.
 The frontend container proxies `/api` to the backend container, so the repo works out of the box with same-origin API calls.
+
+**Important:** Database migrations (Alembic) run automatically on backend startup. No manual migration step is needed for Docker deployments.
+
 For CasaOS, the stack stores Postgres and Redis data under `/DATA/AppData/flux-client` by default, and the backend can reach the existing Calagopus panel on the host through `http://host.docker.internal:8080`.
 Create the data folders once before starting if they do not already exist:
 
@@ -135,9 +187,11 @@ Create the data folders once before starting if they do not already exist:
 mkdir -p /DATA/AppData/flux-client/postgres /DATA/AppData/flux-client/redis
 ```
 
+Pull latest images and deploy:
+
 ```powershell
 docker compose pull
-docker compose up -d
+docker compose up -d --force-recreate backend frontend
 ```
 
 Services:
@@ -147,10 +201,18 @@ Services:
 - PostgreSQL: internal Docker network only
 - Redis: internal Docker network only
 
-If you want a different data location, set `FLUX_DATA_DIR` in your `.env` file before starting the stack.
+**Verify Deployment:**
 
-If you want to pin a specific image version, set `FLUX_IMAGE_TAG` in your `.env` file to a commit SHA or release tag instead of `latest`.
-If you fork the repo and use your own GitHub Actions images, set `FLUX_GHCR_OWNER` to your lowercase GitHub username or organization login. The compose file defaults to `mrfreakcmd` for the upstream project.
+```powershell
+# Check backend health
+curl http://localhost:8010/health
+
+# View backend logs
+docker logs flux_backend --tail 50
+
+# View frontend logs
+docker logs flux_frontend --tail 50
+```
 
 ### GitHub Actions and GHCR
 
@@ -208,3 +270,45 @@ curl http://localhost:8000/health
 - If database imports fail, confirm `POSTGRES_*` values match your database service.
 - If Redis locks are timing out, check that Redis is reachable on the configured host and port.
 - If the frontend cannot reach the API, confirm the `/api` proxy is working or set `VITE_API_BASE_URL` only when you use a separate API host.
+
+### TypeScript Troubleshooting
+
+- **Type errors during build:** Run `npm run type-check` to see all type issues before building. Most are fixed by importing the correct types from `src/types/`.
+- **Path aliases not resolving:** Ensure `tsconfig.json` is in the frontend root and `vite.config.ts` has the `@/` alias configured.
+- **Import paths wrong:** Use `@/` prefix for absolute imports from `src/` (e.g., `import { User } from '@types/index'`).
+
+### Database Migration Troubleshooting
+
+- **Migration conflicts:** If you see "can't locate revision X", run `alembic stamp head` to reset the migration marker to the latest.
+- **Column already exists:** The migration framework prevents duplicate columns, but if you see this error, check `backend/migrations/versions/` for duplicate migrations.
+- **Migrations not running in Docker:** Verify the backend container started successfully with `docker logs flux_backend`. Migrations run on startup automatically.
+
+## Architecture
+
+### Frontend (TypeScript + React 18 + Vite)
+
+**Type Safety:**
+- All API responses typed in `src/types/index.ts`
+- React hooks use proper typing for state and effects
+- Components have typed props and event handlers
+- Path aliases provide clean imports: `@/components/Button` instead of `../../../components/Button`
+
+**Component Structure:**
+- `src/components/common/` — Generic UI primitives (Button, Card, Badge, Input)
+- `src/pages/` — Route-level components with data fetching
+- `src/hooks/` — Custom hooks for reusable logic
+- `src/context/` — Global state (AuthContext)
+- `src/lib/` — Utilities (API client with typed fetch, helpers)
+
+### Backend (FastAPI + SQLAlchemy + Alembic)
+
+**Database Migrations:**
+- Alembic tracks all schema changes in `backend/migrations/versions/`
+- Migrations run automatically on backend startup
+- Manual migrations: `alembic upgrade head`, `alembic downgrade -1`
+- When modifying models, create migrations with `alembic revision --autogenerate -m "message"`
+
+**API Security:**
+- Discord OAuth for authentication
+- JWT tokens for session management
+- Role-based access control (admin vs. user)
