@@ -52,7 +52,7 @@ export default function BillingPage() {
         {message ? <div className="notice">{message}</div> : null}
         {session ? (
           <div className="code-block">
-            {session.tran_id} · {session.gateway_url}
+            {session.tran_id} - {session.gateway_url}
           </div>
         ) : null}
       </section>

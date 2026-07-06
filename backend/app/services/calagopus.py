@@ -5,16 +5,22 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+def build_calagopus_headers() -> Dict[str, str]:
+    api_key = settings.CALAGOPUS_API_KEY.strip()
+    authorization = api_key if " " in api_key else f"Bearer {api_key}"
+    return {
+        "Authorization": authorization,
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+    }
+
 class CalagopusClient:
     def __init__(self):
         self.base_url = settings.CALAGOPUS_URL
         
     @property
     def headers(self) -> Dict[str, str]:
-        return {
-            "Authorization": settings.CALAGOPUS_API_KEY,
-            "Content-Type": "application/json"
-        }
+        return build_calagopus_headers()
 
     async def _request(self, method: str, path: str, json_data: Optional[Dict[str, Any]] = None, params: Optional[Dict[str, Any]] = None) -> httpx.Response:
         url = f"{self.base_url}{path}"

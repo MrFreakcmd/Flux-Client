@@ -11,12 +11,13 @@ function formatCoins(value) {
 export default function DashboardPage() {
   const { user, refreshUser } = useAuth()
   const [servers, setServers] = useState([])
-  const [tickets, setTickets] = useState([])
+  const [announcements, setAnnouncements] = useState([])
   const [prices, setPrices] = useState(null)
   const [referral, setReferral] = useState(null)
   const [selectedServerId, setSelectedServerId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [warnings, setWarnings] = useState([])
 
   useEffect(() => {
     let active = true
@@ -24,37 +25,46 @@ export default function DashboardPage() {
     async function loadDashboard() {
       setLoading(true)
       try {
-        const [serverList, ticketList, priceList, referralData] = await Promise.all([
+        const [serverResult, announcementResult, priceResult, referralResult] = await Promise.allSettled([
           apiFetch('/api/servers'),
-          apiFetch('/api/tickets'),
+          apiFetch('/api/announcements'),
           apiFetch('/api/store/prices'),
           apiFetch('/api/referrals/code'),
         ])
 
-        if (!active) {
-          return
+        if (!active) return
+
+        const nextWarnings = []
+        const unwrap = (result, fallback, label) => {
+          if (result.status === 'fulfilled') return result.value
+          nextWarnings.push(`${label}: ${result.reason?.message || 'Unable to load data'}`)
+          return fallback
         }
 
+        const serverList = unwrap(serverResult, [], 'Servers')
+        const announcementData = unwrap(announcementResult, { announcements: [] }, 'Announcements')
+        const priceList = unwrap(priceResult, null, 'Store prices')
+        const referralData = unwrap(referralResult, null, 'Referral')
+
         setServers(serverList)
-        setTickets(ticketList)
+        setAnnouncements(announcementData.announcements || [])
         setPrices(priceList)
         setReferral(referralData)
         setSelectedServerId(serverList[0]?.calagopus_uuid || null)
         setError(null)
+        setWarnings(nextWarnings)
         await refreshUser()
       } catch (err) {
         if (active) {
           setError(err.message)
+          setWarnings([])
         }
       } finally {
-        if (active) {
-          setLoading(false)
-        }
+        if (active) setLoading(false)
       }
     }
 
     loadDashboard()
-
     return () => {
       active = false
     }
@@ -68,9 +78,7 @@ export default function DashboardPage() {
         <div>
           <p className="eyebrow">Dashboard</p>
           <h1>Welcome back, {user?.username || 'pilot'}.</h1>
-          <p className="hero-text">
-            Your coin balance, server fleet, and support queue are all visible from here.
-          </p>
+          <p className="hero-text">Your coin balance, server fleet, rewards, and announcements are all visible from here.</p>
         </div>
 
         <div className="hero-meta">
@@ -83,13 +91,16 @@ export default function DashboardPage() {
             <strong>{servers.length}</strong>
           </div>
           <div className="mini-metric">
-            <span>Tickets</span>
-            <strong>{tickets.length}</strong>
+            <span>Announcements</span>
+            <strong>{announcements.length}</strong>
           </div>
         </div>
       </section>
 
       {error ? <div className="glass-card notice error">{error}</div> : null}
+      {warnings.map((warning) => (
+        <div className="glass-card notice error" key={warning}>{warning}</div>
+      ))}
       {loading ? <div className="glass-card notice">Loading your workspace...</div> : null}
 
       <section className="stat-grid">
@@ -113,14 +124,10 @@ export default function DashboardPage() {
               <p className="eyebrow">Referral</p>
               <h3>Your invite code</h3>
             </div>
-            <Link className="button button-ghost" to="/store">
-              Buy limits
-            </Link>
+            <Link className="button button-ghost" to="/earn">Earn coins</Link>
           </div>
           <div className="code-block">{referral?.code || user?.discord_id || 'loading...'}</div>
-          <p className="muted">
-            Share this link: <code>{referral?.share_url || 'loading...'}</code>
-          </p>
+          <p className="muted">Share this link: <code>{referral?.share_url || 'loading...'}</code></p>
           <div className="prices-grid">
             {prices ? (
               Object.entries(prices).map(([key, value]) => (
@@ -141,28 +148,23 @@ export default function DashboardPage() {
         <article className="glass-card panel">
           <div className="panel-header">
             <div>
-              <p className="eyebrow">Support</p>
-              <h3>Recent tickets</h3>
+              <p className="eyebrow">News</p>
+              <h3>Latest announcements</h3>
             </div>
-            <Link className="button button-ghost" to="/support">
-              Open support
-            </Link>
+            <Link className="button button-ghost" to="/announcements">Read all</Link>
           </div>
           <div className="list-stack">
-            {tickets.length ? (
-              tickets.map((ticket) => (
-                <div className="list-row" key={ticket.id}>
+            {announcements.length ? (
+              announcements.slice(0, 4).map((item) => (
+                <div className="list-row" key={item.id}>
                   <div>
-                    <strong>{ticket.subject}</strong>
-                    <span>
-                      {ticket.department} · {ticket.status}
-                    </span>
+                    <strong>{item.title}</strong>
+                    <span>{new Date(item.created_at).toLocaleDateString()}</span>
                   </div>
-                  <span className="status-chip neutral">{ticket.messages?.length || 0} msgs</span>
                 </div>
               ))
             ) : (
-              <p className="muted">No tickets yet. Open support when you need us.</p>
+              <p className="muted">No announcements yet.</p>
             )}
           </div>
         </article>
@@ -174,9 +176,7 @@ export default function DashboardPage() {
             <p className="eyebrow">Console</p>
             <h3>Selected server terminal</h3>
           </div>
-          <Link className="button button-ghost" to="/servers">
-            Manage servers
-          </Link>
+          <Link className="button button-ghost" to="/servers">Manage servers</Link>
         </div>
         {selectedServer ? (
           <Terminal serverUuid={selectedServer.calagopus_uuid} title={selectedServer.name} />

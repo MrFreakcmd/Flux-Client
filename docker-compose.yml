@@ -45,6 +45,10 @@ services:
         condition: service_healthy
     ports:
       - "${FLUX_BACKEND_PORT:-8010}:8000"
+    volumes:
+      - type: bind
+        source: ${FLUX_DATA_DIR:-/DATA/AppData/flux-client}/uploads
+        target: /app/uploads
     environment:
       - POSTGRES_HOST=db
       - REDIS_HOST=redis
@@ -69,6 +73,16 @@ services:
       - SMTP_USER=${SMTP_USER}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - SMTP_FROM=${SMTP_FROM}
+      - GIFT_MIN_COINS=${GIFT_MIN_COINS:-1.0}
+      - SERVER_RENEWAL_COST=${SERVER_RENEWAL_COST:-10.0}
+      - SERVER_RENEWAL_DAYS=${SERVER_RENEWAL_DAYS:-30}
+      - JOIN_REWARD_COINS=${JOIN_REWARD_COINS:-5.0}
+      - DISCORD_REWARD_GUILD_ID=${DISCORD_REWARD_GUILD_ID}
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
+      - LINK_REWARD_PROVIDERS=${LINK_REWARD_PROVIDERS}
+      - LINK_REWARD_COINS=${LINK_REWARD_COINS:-1.0}
+      - IMAGE_UPLOAD_DIR=/app/uploads
+      - IMAGE_UPLOAD_MAX_MB=${IMAGE_UPLOAD_MAX_MB:-8}
 
   frontend:
     image: ghcr.io/${FLUX_GHCR_OWNER:-mrfreakcmd}/flux-client-frontend:${FLUX_IMAGE_TAG:-latest}

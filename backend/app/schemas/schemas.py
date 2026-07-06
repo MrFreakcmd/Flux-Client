@@ -208,3 +208,38 @@ class BillingWebhookPayload(BaseModel):
     amount: Optional[Decimal] = None
     verify_sign: Optional[str] = None
     verify_key: Optional[str] = None
+
+
+class AccountUpdateRequest(BaseModel):
+    username: Optional[str] = Field(default=None, min_length=2, max_length=80)
+    avatar: Optional[str] = Field(default=None, max_length=500)
+
+
+class ApiKeyCreateRequest(BaseModel):
+    name: str = Field(default="Default key", min_length=1, max_length=100)
+
+
+class GiftCoinsRequest(BaseModel):
+    recipient_id: UUID
+    amount: Decimal = Field(..., gt=0)
+    note: Optional[str] = Field(default=None, max_length=200)
+
+
+class RedeemCodeRequest(BaseModel):
+    code: str = Field(..., min_length=1, max_length=64)
+
+
+class ImageSettingsRequest(BaseModel):
+    enabled: bool = True
+    embed_enabled: bool = False
+    embed_title: Optional[str] = Field(default=None, max_length=255)
+    embed_description: Optional[str] = Field(default=None, max_length=2000)
+    embed_color: Optional[str] = Field(default=None, max_length=16)
+
+
+class ServerUpdateRequest(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    cpu_limit: Optional[int] = Field(default=None, ge=10, le=800)
+    memory_limit: Optional[int] = Field(default=None, ge=128, le=32768)
+    disk_limit: Optional[int] = Field(default=None, ge=512, le=1048576)
+    slots: Optional[int] = Field(default=None, ge=1, le=10)

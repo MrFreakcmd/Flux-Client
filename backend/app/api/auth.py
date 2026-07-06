@@ -10,6 +10,7 @@ from app.config import settings
 from app.database import get_db
 from app.models.models import User, CoinLedger, AuditLog
 from app.services import discord
+from app.services.calagopus import build_calagopus_headers
 from app.services.auth_utils import create_access_token, get_current_user
 from app.api.security import run_login_security_checks
 from app.api.referrals import apply_referral_code
@@ -121,7 +122,7 @@ async def callback(request: Request, code: str = Query(...), state: str | None =
         calagopus_uuid = None
         calagopus_base_url = settings.CALAGOPUS_URL.rstrip("/")
         calagopus_timeout = httpx.Timeout(20.0, connect=5.0)
-        headers = {"Authorization": settings.CALAGOPUS_API_KEY, "Content-Type": "application/json"}
+        headers = build_calagopus_headers()
         
         async with httpx.AsyncClient(timeout=calagopus_timeout) as client:
             try:

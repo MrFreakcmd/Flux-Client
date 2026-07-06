@@ -48,6 +48,17 @@ class Settings(BaseSettings):
     AFK_REWARD_PER_HEARTBEAT: float = 1.0
     REFERRAL_REWARD_COINS: float = 5.0
     DRIFT_SYNC_INTERVAL_SECONDS: int = 900
+    GIFT_MIN_COINS: float = 1.0
+    SERVER_RENEWAL_COST: float = 10.0
+    SERVER_RENEWAL_DAYS: int = 30
+    CODE_REDEEM_MAX_LENGTH: int = 64
+    JOIN_REWARD_COINS: float = 5.0
+    DISCORD_REWARD_GUILD_ID: str = ""
+    DISCORD_BOT_TOKEN: str = ""
+    LINK_REWARD_PROVIDERS: str = ""
+    LINK_REWARD_COINS: float = 1.0
+    IMAGE_UPLOAD_DIR: str = "uploads"
+    IMAGE_UPLOAD_MAX_MB: int = 8
     
     # Mail Settings (SMTP)
     SMTP_HOST: str = ""

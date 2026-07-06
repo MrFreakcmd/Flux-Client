@@ -1,12 +1,14 @@
 import asyncio
+import os
 from contextlib import suppress
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.config import settings
 from app.database import engine, Base
 from app.services.redis_service import redis_client
-from app.api import auth, server, store, ticket, afk, billing, security, referrals
+from app.api import account, announcements, auth, community, earn, images, server, store, ticket, afk, billing, security, referrals
 from app.tasks import drift_sync
 import logging
 
@@ -67,6 +69,14 @@ app.include_router(afk.router, prefix="/api/afk", tags=["AFK Earnings"])
 app.include_router(billing.router, prefix="/api/billing", tags=["Billing & SSLCommerz"])
 app.include_router(security.router, prefix="/api/security", tags=["Security Checks"])
 app.include_router(referrals.router, prefix="/api/referrals", tags=["Referrals"])
+app.include_router(account.router, prefix="/api/account", tags=["Account"])
+app.include_router(announcements.router, prefix="/api/announcements", tags=["Announcements"])
+app.include_router(community.router, prefix="/api/community", tags=["Community"])
+app.include_router(earn.router, prefix="/api/earn", tags=["Earnings"])
+app.include_router(images.router, prefix="/api/images", tags=["Image Hosting"])
+
+os.makedirs(settings.IMAGE_UPLOAD_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=settings.IMAGE_UPLOAD_DIR), name="uploads")
 
 @app.get("/health")
 def health_check():

@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Boolean, Numeric, DateTime, ForeignKey, Integer, BigInteger, Text, func
+from sqlalchemy import Column, String, Boolean, Numeric, DateTime, ForeignKey, Integer, BigInteger, Text, func, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -132,3 +132,85 @@ class SystemSetting(Base):
     key = Column(String(100), primary_key=True)
     value = Column(JSONB, nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+
+class ApiKey(Base):
+    __tablename__ = "api_keys"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(100), nullable=False, default="Default key")
+    key_hash = Column(String(128), unique=True, nullable=False, index=True)
+    prefix = Column(String(24), nullable=False)
+    last_used_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    revoked_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class UserImageSettings(Base):
+    __tablename__ = "user_image_settings"
+
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    enabled = Column(Boolean, default=True, nullable=False)
+    embed_enabled = Column(Boolean, default=False, nullable=False)
+    embed_title = Column(String(255), nullable=True)
+    embed_description = Column(Text, nullable=True)
+    embed_color = Column(String(16), nullable=True)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+
+class UploadedImage(Base):
+    __tablename__ = "uploaded_images"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    filename = Column(String(255), nullable=False)
+    original_filename = Column(String(255), nullable=False)
+    content_type = Column(String(100), nullable=False)
+    size_bytes = Column(BigInteger, nullable=False)
+    storage_path = Column(Text, nullable=False)
+    public_url = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class RedeemCode(Base):
+    __tablename__ = "redeem_codes"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    code = Column(String(64), unique=True, nullable=False, index=True)
+    coins = Column(Numeric(12, 2), nullable=False)
+    max_uses = Column(Integer, default=1, nullable=False)
+    uses = Column(Integer, default=0, nullable=False)
+    active = Column(Boolean, default=True, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class RedeemCodeUse(Base):
+    __tablename__ = "redeem_code_uses"
+    __table_args__ = (UniqueConstraint("redeem_code_id", "user_id", name="uq_redeem_code_user"),)
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    redeem_code_id = Column(UUID(as_uuid=True), ForeignKey("redeem_codes.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class EarnReward(Base):
+    __tablename__ = "earn_rewards"
+    __table_args__ = (UniqueConstraint("user_id", "reward_type", "provider", name="uq_earn_reward_user_provider"),)
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    reward_type = Column(String(50), nullable=False)
+    provider = Column(String(100), nullable=False)
+    reward = Column(Numeric(12, 2), nullable=False)
+    completed_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class ServerLease(Base):
+    __tablename__ = "server_leases"
+
+    server_id = Column(UUID(as_uuid=True), ForeignKey("servers.id", ondelete="CASCADE"), primary_key=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    renewed_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)

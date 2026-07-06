@@ -1,29 +1,51 @@
+from datetime import datetime, timedelta, timezone
+from decimal import Decimal
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 import uuid
-import httpx
 import logging
 
 from app.database import get_db
 from app.config import settings
-from app.models.models import User, Server, AuditLog
+from app.models.models import User, Server, ServerLease, CoinLedger, AuditLog
 from app.services.auth_utils import get_current_user
 from app.services.calagopus import calagopus_client
 from app.services.redis_service import acquire_lock
-from app.schemas.schemas import ServerCreate, ServerOut
+from app.schemas.schemas import ServerCreate, ServerUpdateRequest
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-@router.get("", response_model=list[ServerOut])
+def _server_payload(db: Session, server: Server) -> dict:
+    lease = db.query(ServerLease).filter(ServerLease.server_id == server.id).first()
+    return {
+        "id": str(server.id),
+        "user_id": str(server.user_id),
+        "calagopus_uuid": str(server.calagopus_uuid),
+        "name": server.name,
+        "egg_uuid": str(server.egg_uuid),
+        "node_uuid": str(server.node_uuid),
+        "cpu_limit": server.cpu_limit,
+        "memory_limit": server.memory_limit,
+        "disk_limit": server.disk_limit,
+        "slots": server.slots,
+        "is_suspended": server.is_suspended,
+        "expires_at": lease.expires_at if lease else None,
+        "created_at": server.created_at,
+        "updated_at": server.updated_at,
+    }
+
+
+@router.get("")
 def list_user_servers(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Lists all servers owned by the authenticated user.
     """
     servers = db.query(Server).filter(Server.user_id == current_user.id).all()
-    return servers
+    return [_server_payload(db, server) for server in servers]
 
-@router.post("/create", response_model=ServerOut, status_code=status.HTTP_201_CREATED)
+@router.post("/create", status_code=status.HTTP_201_CREATED)
 async def create_user_server(
     payload: ServerCreate,
     current_user: User = Depends(get_current_user),
@@ -176,7 +198,14 @@ async def create_user_server(
         db.commit()
         db.refresh(new_server)
 
-        return new_server
+        lease = ServerLease(
+            server_id=new_server.id,
+            expires_at=datetime.now(timezone.utc) + timedelta(days=settings.SERVER_RENEWAL_DAYS),
+        )
+        db.add(lease)
+        db.commit()
+
+        return _server_payload(db, new_server)
 
 @router.post("/{server_uuid}/power")
 async def server_power(
@@ -207,6 +236,145 @@ async def server_power(
     db.commit()
 
     return {"status": "success", "action": action}
+
+
+@router.patch("/{server_uuid}")
+async def update_server_details(
+    server_uuid: uuid.UUID,
+    payload: ServerUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    server = db.query(Server).filter(Server.calagopus_uuid == server_uuid, Server.user_id == current_user.id).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found or access denied")
+
+    async with acquire_lock(f"create_server:{current_user.id}"):
+        other_servers = db.query(Server).filter(Server.user_id == current_user.id, Server.id != server.id).all()
+        next_cpu = payload.cpu_limit if payload.cpu_limit is not None else server.cpu_limit
+        next_memory = payload.memory_limit if payload.memory_limit is not None else server.memory_limit
+        next_disk = payload.disk_limit if payload.disk_limit is not None else server.disk_limit
+        next_slots = payload.slots if payload.slots is not None else server.slots
+
+        if sum(item.cpu_limit for item in other_servers) + next_cpu > current_user.limit_cpu:
+            raise HTTPException(status_code=400, detail="Requested CPU exceeds your account limit")
+        if sum(item.memory_limit for item in other_servers) + next_memory > current_user.limit_memory:
+            raise HTTPException(status_code=400, detail="Requested memory exceeds your account limit")
+        if sum(item.disk_limit for item in other_servers) + next_disk > current_user.limit_disk:
+            raise HTTPException(status_code=400, detail="Requested disk exceeds your account limit")
+
+        calagopus_payload = {
+            "name": payload.name.strip() if payload.name else server.name,
+            "limits": {
+                "cpu": next_cpu,
+                "memory": next_memory,
+                "memory_overhead": 0,
+                "swap": -1,
+                "disk": next_disk,
+            },
+            "feature_limits": {
+                "allocations": next_slots,
+                "databases": 1,
+                "backups": 2,
+                "schedules": 2,
+            },
+        }
+        resp = await calagopus_client.update_server(str(server_uuid), calagopus_payload)
+        if resp.status_code not in [200, 204]:
+            raise HTTPException(status_code=500, detail=f"Game panel failed to update server: {resp.text}")
+
+        if payload.name:
+            server.name = payload.name.strip()
+        server.cpu_limit = next_cpu
+        server.memory_limit = next_memory
+        server.disk_limit = next_disk
+        server.slots = next_slots
+        db.add(
+            AuditLog(
+                user_id=current_user.id,
+                action="server_update",
+                details={"server_uuid": str(server_uuid), "name": server.name},
+            )
+        )
+        db.commit()
+        db.refresh(server)
+        return _server_payload(db, server)
+
+
+@router.post("/{server_uuid}/renew")
+async def renew_server(
+    server_uuid: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    server = db.query(Server).filter(Server.calagopus_uuid == server_uuid, Server.user_id == current_user.id).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found or access denied")
+
+    cost = Decimal(str(settings.SERVER_RENEWAL_COST))
+    async with acquire_lock(f"renew_server:{server.id}"):
+        async with acquire_lock(f"coins:{current_user.id}"):
+            locked_user = db.query(User).filter(User.id == current_user.id).with_for_update().first()
+            if locked_user is None:
+                raise HTTPException(status_code=404, detail="User not found")
+            if Decimal(str(locked_user.coins)) < cost:
+                raise HTTPException(status_code=400, detail=f"Renewal costs {cost} coins")
+
+            locked_user.coins = Decimal(str(locked_user.coins)) - cost
+            db.add(
+                CoinLedger(
+                    user_id=locked_user.id,
+                    amount=-cost,
+                    running_balance=locked_user.coins,
+                    type="renewal",
+                    description=f"Renewed server {server.name}",
+                    reference_id=str(server.id),
+                )
+            )
+        lease = db.query(ServerLease).filter(ServerLease.server_id == server.id).first()
+        now = datetime.now(timezone.utc)
+        if lease is None:
+            lease = ServerLease(server_id=server.id, expires_at=now)
+            db.add(lease)
+        base = lease.expires_at if lease.expires_at and lease.expires_at > now else now
+        lease.expires_at = base + timedelta(days=settings.SERVER_RENEWAL_DAYS)
+        db.add(
+            AuditLog(
+                user_id=current_user.id,
+                action="server_renew",
+                details={"server_uuid": str(server_uuid), "cost": str(cost), "expires_at": lease.expires_at.isoformat()},
+            )
+        )
+        db.commit()
+        db.refresh(server)
+
+    return {"server": _server_payload(db, server), "remaining_coins": str(locked_user.coins)}
+
+
+@router.delete("/{server_uuid}")
+async def delete_server(
+    server_uuid: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    server = db.query(Server).filter(Server.calagopus_uuid == server_uuid, Server.user_id == current_user.id).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found or access denied")
+
+    resp = await calagopus_client.delete_server(str(server_uuid))
+    if resp.status_code not in [200, 202, 204, 404]:
+        raise HTTPException(status_code=500, detail=f"Game panel failed to delete server: {resp.text}")
+
+    db.add(
+        AuditLog(
+            user_id=current_user.id,
+            action="server_delete",
+            details={"server_uuid": str(server_uuid), "name": server.name},
+        )
+    )
+    db.delete(server)
+    db.commit()
+    return {"status": "deleted", "server_uuid": str(server_uuid)}
 
 @router.get("/{server_uuid}/websocket")
 async def server_websocket_details(

@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import hashlib
 from typing import Optional
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
@@ -6,7 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
-from app.models.models import User
+from app.models.models import ApiKey, User
 import uuid
 
 # Define oauth2 scheme (optional tokenUrl for OpenAPI documentation docs)
@@ -30,6 +31,16 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     )
     if not token:
         raise credentials_exception
+    if token.startswith("flux_"):
+        key_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+        api_key = db.query(ApiKey).filter(ApiKey.key_hash == key_hash, ApiKey.revoked_at.is_(None)).first()
+        if api_key is None:
+            raise credentials_exception
+        api_key.last_used_at = datetime.now(timezone.utc)
+        user = db.query(User).filter(User.id == api_key.user_id).first()
+        if user is None:
+            raise credentials_exception
+        return user
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         user_id: str = payload.get("sub")

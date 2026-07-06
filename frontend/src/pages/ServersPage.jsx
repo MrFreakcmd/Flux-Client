@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import Terminal from '../components/Terminal'
+import { useAuth } from '../context/AuthContext'
 import { apiFetch } from '../lib/api'
 
-const defaultForm = {
+const defaultCreateForm = {
   name: '',
   egg_uuid: '',
   node_uuid: '',
@@ -13,11 +14,27 @@ const defaultForm = {
   slots: 1,
 }
 
+const defaultUpdateForm = {
+  name: '',
+  cpu_limit: 100,
+  memory_limit: 2048,
+  disk_limit: 10000,
+  slots: 1,
+}
+
+function formatDate(value) {
+  return value ? new Date(value).toLocaleString() : 'No lease'
+}
+
 export default function ServersPage() {
   const params = useParams()
+  const { refreshUser } = useAuth()
   const [servers, setServers] = useState([])
   const [selectedServerId, setSelectedServerId] = useState(params.serverId || null)
-  const [form, setForm] = useState(defaultForm)
+  const [createForm, setCreateForm] = useState(defaultCreateForm)
+  const [updateForm, setUpdateForm] = useState(defaultUpdateForm)
+  const [files, setFiles] = useState([])
+  const [backups, setBackups] = useState([])
   const [message, setMessage] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -26,9 +43,8 @@ export default function ServersPage() {
     try {
       const data = await apiFetch('/api/servers')
       setServers(data)
-      if (!selectedServerId && data[0]?.calagopus_uuid) {
-        setSelectedServerId(data[0].calagopus_uuid)
-      }
+      const nextSelected = params.serverId || selectedServerId || data[0]?.calagopus_uuid || null
+      setSelectedServerId(nextSelected)
     } catch (err) {
       setMessage(err.message)
     } finally {
@@ -38,34 +54,61 @@ export default function ServersPage() {
 
   useEffect(() => {
     loadServers()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.serverId])
+
+  const selectedServer = servers.find((server) => server.calagopus_uuid === selectedServerId) || servers[0] || null
 
   useEffect(() => {
-    if (params.serverId) {
-      setSelectedServerId(params.serverId)
-    }
-  }, [params.serverId])
-
-  const selectedServer = servers.find((server) => server.calagopus_uuid === selectedServerId) || null
+    if (!selectedServer) return
+    setUpdateForm({
+      name: selectedServer.name,
+      cpu_limit: selectedServer.cpu_limit,
+      memory_limit: selectedServer.memory_limit,
+      disk_limit: selectedServer.disk_limit,
+      slots: selectedServer.slots,
+    })
+    setFiles([])
+    setBackups([])
+  }, [selectedServer?.calagopus_uuid])
 
   async function handleCreate(event) {
     event.preventDefault()
     setMessage(null)
-
     try {
       await apiFetch('/api/servers/create', {
         method: 'POST',
         body: {
-          ...form,
-          cpu_limit: Number(form.cpu_limit),
-          memory_limit: Number(form.memory_limit),
-          disk_limit: Number(form.disk_limit),
-          slots: Number(form.slots),
+          ...createForm,
+          cpu_limit: Number(createForm.cpu_limit),
+          memory_limit: Number(createForm.memory_limit),
+          disk_limit: Number(createForm.disk_limit),
+          slots: Number(createForm.slots),
         },
       })
       setMessage('Server created successfully.')
-      setForm(defaultForm)
+      setCreateForm(defaultCreateForm)
+      await loadServers()
+    } catch (err) {
+      setMessage(err.message)
+    }
+  }
+
+  async function handleUpdate(event) {
+    event.preventDefault()
+    if (!selectedServer) return
+    setMessage(null)
+    try {
+      await apiFetch(`/api/servers/${selectedServer.calagopus_uuid}`, {
+        method: 'PATCH',
+        body: {
+          ...updateForm,
+          cpu_limit: Number(updateForm.cpu_limit),
+          memory_limit: Number(updateForm.memory_limit),
+          disk_limit: Number(updateForm.disk_limit),
+          slots: Number(updateForm.slots),
+        },
+      })
+      setMessage('Server updated.')
       await loadServers()
     } catch (err) {
       setMessage(err.message)
@@ -74,10 +117,68 @@ export default function ServersPage() {
 
   async function sendPowerAction(serverUuid, action) {
     try {
-      await apiFetch(`/api/servers/${serverUuid}/power?action=${encodeURIComponent(action)}`, {
-        method: 'POST',
-      })
+      await apiFetch(`/api/servers/${serverUuid}/power?action=${encodeURIComponent(action)}`, { method: 'POST' })
       setMessage(`Sent ${action} command.`)
+    } catch (err) {
+      setMessage(err.message)
+    }
+  }
+
+  async function renewServer() {
+    if (!selectedServer) return
+    setMessage(null)
+    try {
+      const data = await apiFetch(`/api/servers/${selectedServer.calagopus_uuid}/renew`, { method: 'POST' })
+      setMessage(`Server renewed. Remaining coins: ${data.remaining_coins}`)
+      await Promise.all([loadServers(), refreshUser()])
+    } catch (err) {
+      setMessage(err.message)
+    }
+  }
+
+  async function deleteServer() {
+    if (!selectedServer) return
+    const confirmed = window.confirm(`Delete ${selectedServer.name}? This removes it from Calagopus too.`)
+    if (!confirmed) return
+    setMessage(null)
+    try {
+      await apiFetch(`/api/servers/${selectedServer.calagopus_uuid}`, { method: 'DELETE' })
+      setSelectedServerId(null)
+      setMessage('Server deleted.')
+      await loadServers()
+    } catch (err) {
+      setMessage(err.message)
+    }
+  }
+
+  async function loadFiles() {
+    if (!selectedServer) return
+    try {
+      const data = await apiFetch(`/api/servers/${selectedServer.calagopus_uuid}/files`)
+      const list = data.files?.data || data.data || data.files || []
+      setFiles(Array.isArray(list) ? list : [])
+    } catch (err) {
+      setMessage(err.message)
+    }
+  }
+
+  async function loadBackups() {
+    if (!selectedServer) return
+    try {
+      const data = await apiFetch(`/api/servers/${selectedServer.calagopus_uuid}/backups`)
+      const list = data.backups?.data || data.data || data.backups || []
+      setBackups(Array.isArray(list) ? list : [])
+    } catch (err) {
+      setMessage(err.message)
+    }
+  }
+
+  async function createBackup() {
+    if (!selectedServer) return
+    try {
+      await apiFetch(`/api/servers/${selectedServer.calagopus_uuid}/backups`, { method: 'POST' })
+      setMessage('Backup requested.')
+      await loadBackups()
     } catch (err) {
       setMessage(err.message)
     }
@@ -100,6 +201,11 @@ export default function ServersPage() {
               className={`glass-card server-card${selectedServerId === server.calagopus_uuid ? ' is-selected' : ''}`}
               key={server.id}
               onClick={() => setSelectedServerId(server.calagopus_uuid)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  setSelectedServerId(server.calagopus_uuid)
+                }
+              }}
               role="button"
               tabIndex={0}
             >
@@ -115,6 +221,7 @@ export default function ServersPage() {
                 <span>{server.cpu_limit}% CPU</span>
                 <span>{server.memory_limit} MB</span>
                 <span>{server.disk_limit} MB</span>
+                <span>Expires {formatDate(server.expires_at)}</span>
               </div>
               <div className="button-row">
                 {['start', 'restart', 'stop', 'kill'].map((action) => (
@@ -147,91 +254,56 @@ export default function ServersPage() {
           <form className="form-grid" onSubmit={handleCreate}>
             <label className="field">
               <span>Name</span>
-              <input
-                className="input"
-                value={form.name}
-                onChange={(event) => setForm({ ...form, name: event.target.value })}
-                required
-              />
+              <input className="input" value={createForm.name} onChange={(event) => setCreateForm({ ...createForm, name: event.target.value })} required />
             </label>
             <label className="field">
               <span>Egg UUID</span>
-              <input
-                className="input"
-                value={form.egg_uuid}
-                onChange={(event) => setForm({ ...form, egg_uuid: event.target.value })}
-                placeholder="Paste from Calagopus"
-                required
-              />
+              <input className="input" value={createForm.egg_uuid} onChange={(event) => setCreateForm({ ...createForm, egg_uuid: event.target.value })} required />
             </label>
             <label className="field">
               <span>Node UUID</span>
-              <input
-                className="input"
-                value={form.node_uuid}
-                onChange={(event) => setForm({ ...form, node_uuid: event.target.value })}
-                placeholder="Paste from Calagopus"
-                required
-              />
+              <input className="input" value={createForm.node_uuid} onChange={(event) => setCreateForm({ ...createForm, node_uuid: event.target.value })} required />
             </label>
-            <label className="field">
-              <span>CPU %</span>
-              <input
-                className="input"
-                type="number"
-                min="10"
-                max="800"
-                step="10"
-                value={form.cpu_limit}
-                onChange={(event) => setForm({ ...form, cpu_limit: event.target.value })}
-                required
-              />
-            </label>
-            <label className="field">
-              <span>Memory MB</span>
-              <input
-                className="input"
-                type="number"
-                min="128"
-                max="32768"
-                step="128"
-                value={form.memory_limit}
-                onChange={(event) => setForm({ ...form, memory_limit: event.target.value })}
-                required
-              />
-            </label>
-            <label className="field">
-              <span>Disk MB</span>
-              <input
-                className="input"
-                type="number"
-                min="512"
-                max="1048576"
-                step="512"
-                value={form.disk_limit}
-                onChange={(event) => setForm({ ...form, disk_limit: event.target.value })}
-                required
-              />
-            </label>
-            <label className="field">
-              <span>Slots</span>
-              <input
-                className="input"
-                type="number"
-                min="1"
-                max="10"
-                step="1"
-                value={form.slots}
-                onChange={(event) => setForm({ ...form, slots: event.target.value })}
-                required
-              />
-            </label>
-            <button className="button button-primary" type="submit">
-              Provision server
-            </button>
+            {['cpu_limit', 'memory_limit', 'disk_limit', 'slots'].map((field) => (
+              <label className="field" key={field}>
+                <span>{field.replace('_', ' ')}</span>
+                <input className="input" type="number" value={createForm[field]} onChange={(event) => setCreateForm({ ...createForm, [field]: event.target.value })} required />
+              </label>
+            ))}
+            <button className="button button-primary" type="submit">Provision server</button>
           </form>
         </article>
 
+        <article className="glass-card panel">
+          <div className="panel-header">
+            <div>
+              <p className="eyebrow">Update</p>
+              <h3>{selectedServer ? selectedServer.name : 'Select a server'}</h3>
+            </div>
+          </div>
+          {selectedServer ? (
+            <form className="form-grid" onSubmit={handleUpdate}>
+              <label className="field">
+                <span>Name</span>
+                <input className="input" value={updateForm.name} onChange={(event) => setUpdateForm({ ...updateForm, name: event.target.value })} />
+              </label>
+              {['cpu_limit', 'memory_limit', 'disk_limit', 'slots'].map((field) => (
+                <label className="field" key={field}>
+                  <span>{field.replace('_', ' ')}</span>
+                  <input className="input" type="number" value={updateForm[field]} onChange={(event) => setUpdateForm({ ...updateForm, [field]: event.target.value })} />
+                </label>
+              ))}
+              <button className="button button-primary" type="submit">Save changes</button>
+              <button className="button button-ghost" type="button" onClick={renewServer}>Renew server</button>
+              <button className="button button-ghost" type="button" onClick={deleteServer}>Delete server</button>
+            </form>
+          ) : (
+            <p className="muted">Select a server card to update it.</p>
+          )}
+        </article>
+      </section>
+
+      <section className="dashboard-grid">
         <article className="glass-card panel">
           <div className="panel-header">
             <div>
@@ -239,11 +311,40 @@ export default function ServersPage() {
               <h3>Live terminal</h3>
             </div>
           </div>
-          {selectedServer ? (
-            <Terminal serverUuid={selectedServer.calagopus_uuid} title={selectedServer.name} />
-          ) : (
-            <p className="muted">Select a server card to open its terminal.</p>
-          )}
+          {selectedServer ? <Terminal serverUuid={selectedServer.calagopus_uuid} title={selectedServer.name} /> : <p className="muted">Select a server card to open its terminal.</p>}
+        </article>
+
+        <article className="glass-card panel">
+          <div className="panel-header">
+            <div>
+              <p className="eyebrow">Files and backups</p>
+              <h3>Inspect server storage</h3>
+            </div>
+            <div className="button-row tight">
+              <button className="button button-ghost" type="button" onClick={loadFiles} disabled={!selectedServer}>Files</button>
+              <button className="button button-ghost" type="button" onClick={loadBackups} disabled={!selectedServer}>Backups</button>
+              <button className="button button-primary" type="button" onClick={createBackup} disabled={!selectedServer}>Create backup</button>
+            </div>
+          </div>
+          <div className="list-stack">
+            {files.map((file, index) => (
+              <div className="list-row" key={file.uuid || file.name || index}>
+                <div>
+                  <strong>{file.name || file.path || 'File'}</strong>
+                  <span>{file.size || file.mode || file.mime || 'No metadata'}</span>
+                </div>
+              </div>
+            ))}
+            {backups.map((backup, index) => (
+              <div className="list-row" key={backup.uuid || backup.name || index}>
+                <div>
+                  <strong>{backup.name || backup.uuid || 'Backup'}</strong>
+                  <span>{backup.created_at || backup.completed_at || 'Pending metadata'}</span>
+                </div>
+              </div>
+            ))}
+            {!files.length && !backups.length ? <p className="muted">Load files or backups to inspect this server.</p> : null}
+          </div>
         </article>
       </section>
     </div>

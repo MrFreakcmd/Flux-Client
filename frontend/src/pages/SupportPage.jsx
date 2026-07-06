@@ -155,7 +155,7 @@ export default function SupportPage() {
                 <div>
                   <strong>{ticket.subject}</strong>
                   <span>
-                    {ticket.department} · {ticket.status}
+                    {ticket.department} - {ticket.status}
                   </span>
                 </div>
                 <span className="status-chip neutral">{ticket.support_pin ? 'PIN set' : 'no pin'}</span>

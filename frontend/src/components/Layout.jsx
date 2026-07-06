@@ -1,13 +1,17 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { API_BASE_URL } from '../lib/api'
+import { apiDisplayHost } from '../lib/api'
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/servers', label: 'Servers' },
   { to: '/store', label: 'Store' },
-  { to: '/support', label: 'Support' },
+  { to: '/earn', label: 'Earn' },
+  { to: '/community', label: 'Community' },
+  { to: '/images', label: 'Images' },
+  { to: '/announcements', label: 'News' },
   { to: '/billing', label: 'Billing' },
+  { to: '/account', label: 'Account' },
 ]
 
 export default function Layout() {
@@ -51,7 +55,7 @@ export default function Layout() {
         <header className="topbar glass-card">
           <div>
             <p className="eyebrow">Backend</p>
-            <h2>{API_BASE_URL.replace(/^https?:\/\//, '')}</h2>
+            <h2>{apiDisplayHost()}</h2>
           </div>
           <div className="topbar-meta">
             <span className="status-chip online">Live session</span>
