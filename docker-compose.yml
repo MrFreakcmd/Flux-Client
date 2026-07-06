@@ -8,7 +8,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-flux_client}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - type: bind
+        source: ${FLUX_DATA_DIR:-/DATA/AppData/flux-client}/postgres
+        target: /var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-flux_client}"]
       interval: 10s
@@ -20,7 +22,9 @@ services:
     container_name: flux_redis
     restart: unless-stopped
     volumes:
-      - redis_data:/data
+      - type: bind
+        source: ${FLUX_DATA_DIR:-/DATA/AppData/flux-client}/redis
+        target: /data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -32,6 +36,8 @@ services:
     pull_policy: always
     container_name: flux_backend
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       db:
         condition: service_healthy
@@ -73,7 +79,3 @@ services:
       - backend
     ports:
       - "${FLUX_FRONTEND_PORT:-3010}:80"
-
-volumes:
-  postgres_data:
-  redis_data:

@@ -128,6 +128,12 @@ npm run preview
 Docker Compose starts PostgreSQL, Redis, the backend, and the frontend together.
 This repository now expects the backend and frontend to be published as GitHub Container Registry images by the GitHub Actions workflow in `.github/workflows/publish-images.yml`.
 The frontend container proxies `/api` to the backend container, so the repo works out of the box with same-origin API calls.
+For CasaOS, the stack stores Postgres and Redis data under `/DATA/AppData/flux-client` by default, and the backend can reach the existing Calagopus panel on the host through `http://host.docker.internal:8080`.
+Create the data folders once before starting if they do not already exist:
+
+```powershell
+mkdir -p /DATA/AppData/flux-client/postgres /DATA/AppData/flux-client/redis
+```
 
 ```powershell
 docker compose pull
@@ -140,6 +146,8 @@ Services:
 - Frontend: `http://localhost:3010`
 - PostgreSQL: internal Docker network only
 - Redis: internal Docker network only
+
+If you want a different data location, set `FLUX_DATA_DIR` in your `.env` file before starting the stack.
 
 If you want to pin a specific image version, set `FLUX_IMAGE_TAG` in your `.env` file to a commit SHA or release tag instead of `latest`.
 If you fork the repo and use your own GitHub Actions images, set `FLUX_GHCR_OWNER` to your lowercase GitHub username or organization login. The compose file defaults to `mrfreakcmd` for the upstream project.
