@@ -142,7 +142,7 @@ Services:
 - Redis: internal Docker network only
 
 If you want to pin a specific image version, set `FLUX_IMAGE_TAG` in your `.env` file to a commit SHA or release tag instead of `latest`.
-If you fork the repo and use your own GitHub Actions images, set `FLUX_GHCR_OWNER` to your GitHub username or organization. The compose file defaults to `blackbox-cmd` for the upstream project.
+If you fork the repo and use your own GitHub Actions images, set `FLUX_GHCR_OWNER` to your lowercase GitHub username or organization login. The compose file defaults to `blackbox-cmd` for the upstream project.
 
 ### GitHub Actions and GHCR
 
