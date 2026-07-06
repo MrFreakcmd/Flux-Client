@@ -60,3 +60,8 @@ temp/
 # Docker / local runtime
 postgres_data/
 redis_data/
+
+# Alembic - keep migrations tracked, exclude version cache
+backend/alembic/__pycache__/
+backend/migrations/__pycache__/
+backend/alembic.ini.local
