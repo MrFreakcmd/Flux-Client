@@ -63,6 +63,34 @@ export default function AdminUserDetailsPage() {
     }
   }
 
+  async function handlePromoteUser() {
+    setMessage(null)
+    setError(null)
+    try {
+      await apiFetch(`/api/admin/users/${userId}/promote`, {
+        method: 'POST',
+      })
+      setMessage('User promoted to admin successfully')
+      await loadUser()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  async function handleDemoteUser() {
+    setMessage(null)
+    setError(null)
+    try {
+      await apiFetch(`/api/admin/users/${userId}/demote`, {
+        method: 'POST',
+      })
+      setMessage('User demoted from admin successfully')
+      await loadUser()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
   async function handleSuspendUser(suspend) {
     setMessage(null)
     setError(null)
@@ -72,6 +100,23 @@ export default function AdminUserDetailsPage() {
         body: { suspend },
       })
       setMessage(`User ${suspend ? 'suspended' : 'unsuspended'} successfully`)
+      await loadUser()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  async function handleGrantCoins(e) {
+    e.preventDefault()
+    setMessage(null)
+    setError(null)
+    try {
+      await apiFetch(`/api/admin/users/${userId}/grant-coins`, {
+        method: 'POST',
+        body: grantForm,
+      })
+      setMessage('Coins granted successfully')
+      setGrantForm({ amount: '', description: '' })
       await loadUser()
     } catch (err) {
       setError(err.message)
@@ -184,6 +229,30 @@ export default function AdminUserDetailsPage() {
                 />
                 <span>Admin Access</span>
               </label>
+            </div>
+
+            <div className="form-group">
+              <label>Quick Admin Actions</label>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={handlePromoteUser}
+                  disabled={user.is_admin}
+                  className="btn btn-success"
+                  title={user.is_admin ? 'User is already an admin' : 'Promote to admin'}
+                >
+                  Promote to Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDemoteUser}
+                  disabled={!user.is_admin}
+                  className="btn btn-warning"
+                  title={!user.is_admin ? 'User is not an admin' : 'Demote from admin'}
+                >
+                  Demote from Admin
+                </button>
+              </div>
             </div>
 
             <div className="form-group">

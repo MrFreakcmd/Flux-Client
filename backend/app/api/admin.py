@@ -252,6 +252,75 @@ async def grant_coins(
     }
 
 
+@router.post("/users/{user_id}/promote")
+async def promote_user(
+    user_id: str,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """Promote a user to admin"""
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.is_admin:
+        raise HTTPException(
+            status_code=400,
+            detail="User is already an admin"
+        )
+
+    user.is_admin = True
+    db.commit()
+
+    logger.info(f"Admin {current_user.username} promoted user {user.username} to admin")
+
+    return {
+        "success": True,
+        "user_id": str(user.id),
+        "username": user.username,
+        "is_admin": user.is_admin
+    }
+
+
+@router.post("/users/{user_id}/demote")
+async def demote_user(
+    user_id: str,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """Demote an admin user to regular user"""
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Prevent demoting yourself
+    if str(current_user.id) == user_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot demote yourself from admin"
+        )
+
+    if not user.is_admin:
+        raise HTTPException(
+            status_code=400,
+            detail="User is not an admin"
+        )
+
+    user.is_admin = False
+    db.commit()
+
+    logger.info(f"Admin {current_user.username} demoted user {user.username} from admin")
+
+    return {
+        "success": True,
+        "user_id": str(user.id),
+        "username": user.username,
+        "is_admin": user.is_admin
+    }
+
+
 @router.post("/users/{user_id}/suspend")
 async def suspend_user(
     user_id: str,
