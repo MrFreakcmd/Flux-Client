@@ -28,21 +28,33 @@ def _query_duplicate_accounts(db: Session, client_ip: str, discord_id: str | Non
 
 
 async def _query_vpn_api(client_ip: str) -> tuple[bool, bool, bool]:
+    """Query vpnapi.io with API key in Authorization header (not URL).
+
+    Never expose API keys in URLs where they may be logged or cached.
+    """
     if not settings.VPNAPI_KEY:
         return False, False, False
 
-    url = f"https://vpnapi.io/api/{client_ip}?key={settings.VPNAPI_KEY}"
+    url = f"https://vpnapi.io/api/{client_ip}"
+    headers = {"Authorization": f"Bearer {settings.VPNAPI_KEY}"}
     async with httpx.AsyncClient() as client:
-        resp = await client.get(url, timeout=5)
-        if resp.status_code != 200:
-            logger.warning("VPN API lookup failed for %s: %s", client_ip, resp.text)
+        try:
+            resp = await client.get(url, headers=headers, timeout=5)
+            if resp.status_code != 200:
+                logger.warning("VPN API lookup failed for %s: %s", client_ip, resp.text)
+                return False, False, False
+            security = resp.json().get("security", {})
+            return (
+                bool(security.get("vpn", False)),
+                bool(security.get("proxy", False)),
+                bool(security.get("tor", False)),
+            )
+        except httpx.TimeoutException:
+            logger.warning("VPN API timeout for IP %s", client_ip)
             return False, False, False
-        security = resp.json().get("security", {})
-        return (
-            bool(security.get("vpn", False)),
-            bool(security.get("proxy", False)),
-            bool(security.get("tor", False)),
-        )
+        except httpx.RequestError as e:
+            logger.warning("VPN API request error for IP %s: %s", client_ip, e)
+            return False, False, False
 
 
 async def run_login_security_checks(
