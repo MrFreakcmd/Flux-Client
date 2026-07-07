@@ -1,4 +1,5 @@
 """Application configuration using Pydantic settings with environment variables."""
+from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, field_validator
 
@@ -44,7 +45,7 @@ class Settings(BaseSettings):
     BACKEND_PUBLIC_URL: str = "http://localhost:8000"
 
     # CORS Settings - Comma-separated list, falls back to FRONTEND_URL
-    CORS_ALLOWED_ORIGINS: str = Field(
+    CORS_ALLOWED_ORIGINS: Optional[str] = Field(
         default=None, description="Comma-separated list of allowed CORS origins"
     )
 
