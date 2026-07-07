@@ -206,13 +206,27 @@ async def callback(request: Request, code: str = Query(...), state: str | None =
     db.add(log)
     db.commit()
     
-    # 6. Generate access token
+    # 6. Generate access token and set HttpOnly cookie
     token = create_access_token(data={"sub": str(user.id)})
-    
-    # Redirect back to the frontend with token
-    # (Typically frontends read this from URL search params on mount)
-    frontend_redirect_url = f"{settings.FRONTEND_URL}/auth/callback?token={token}"
-    return RedirectResponse(frontend_redirect_url)
+
+    # Redirect back to frontend (token will be in HttpOnly cookie, not URL)
+    # This prevents token leakage to browser history, logs, CDN, referer headers
+    frontend_redirect_url = f"{settings.FRONTEND_URL}/auth/callback"
+    response = RedirectResponse(frontend_redirect_url)
+
+    # Set HttpOnly, SameSite cookie (cannot be accessed by JavaScript)
+    # secure=True only in production (HTTPS). In development (HTTP localhost),
+    # secure must be False or the cookie will be rejected by the browser.
+    is_production = not settings.BACKEND_PUBLIC_URL.startswith("http://localhost")
+    response.set_cookie(
+        key="access_token_cookie",
+        value=token,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        httponly=True,  # Prevent XSS access
+        secure=is_production,  # Only send over HTTPS in production
+        samesite="Lax"  # CSRF protection
+    )
+    return response
 
 @router.get("/me", response_model=UserOut)
 def get_me(current_user: User = Depends(get_current_user)):
