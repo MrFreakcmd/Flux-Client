@@ -1,0 +1,102 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  width: 100%;
+}
+
+.label {
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+  color: var(--color-neutral-900);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.required {
+  color: var(--color-danger);
+  font-weight: var(--font-weight-bold);
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  border-radius: var(--radius-md);
+  border: 2px solid var(--color-neutral-200);
+  background: white;
+  transition: all var(--duration-normal) var(--ease-in-out);
+}
+
+.inputWrapper:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0, 100, 200, 0.1);
+}
+
+.inputWrapper.hasError {
+  border-color: var(--color-danger);
+}
+
+.inputWrapper.hasError:focus-within {
+  box-shadow: 0 0 0 3px rgba(200, 50, 50, 0.1);
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-sm);
+  color: var(--color-neutral-400);
+  font-size: var(--font-size-lg);
+}
+
+.input {
+  flex: 1;
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  background: transparent;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-base);
+  color: var(--color-neutral-900);
+  outline: none;
+  min-height: 44px;
+}
+
+.input::placeholder {
+  color: var(--color-neutral-300);
+}
+
+.input:disabled {
+  cursor: not-allowed;
+  color: var(--color-neutral-400);
+  background: var(--color-neutral-50);
+}
+
+.error {
+  font-size: var(--font-size-sm);
+  color: var(--color-danger);
+  font-weight: var(--font-weight-medium);
+  margin: 0;
+}
+
+.helpText {
+  font-size: var(--font-size-sm);
+  color: var(--color-neutral-500);
+  margin: 0;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .inputWrapper {
+    transition: none;
+  }
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .input {
+    font-size: 16px; /* Prevent zoom on mobile */
+  }
+}

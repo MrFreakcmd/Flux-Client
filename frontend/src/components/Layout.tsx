@@ -1,6 +1,9 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { apiDisplayHost } from '../lib/api'
+import { Button } from './Button'
+import { SkipLink } from './SkipLink'
+import { PageTransition } from './PageTransition'
 
 interface NavItem {
   to: string
@@ -24,6 +27,8 @@ export default function Layout() {
 
   return (
     <div className="app-shell">
+      <SkipLink />
+
       <aside className="sidebar glass-card">
         <div className="brand-lockup">
           <div className="brand-mark">F</div>
@@ -75,13 +80,13 @@ export default function Layout() {
             <strong>{user?.username || 'Signed in user'}</strong>
             <span>{user?.email || 'Connected to dashboard'}</span>
           </div>
-          <button className="button button-ghost" type="button" onClick={logout}>
+          <Button variant="ghost" size="sm" onClick={logout}>
             Sign out
-          </button>
+          </Button>
         </div>
       </aside>
 
-      <main className="app-main">
+      <main className="app-main" id="main-content">
         <header className="topbar glass-card">
           <div>
             <p className="eyebrow">Backend</p>
@@ -94,7 +99,9 @@ export default function Layout() {
         </header>
 
         <section className="page-content">
-          <Outlet />
+          <PageTransition>
+            <Outlet />
+          </PageTransition>
         </section>
       </main>
     </div>
