@@ -23,14 +23,14 @@ const LandingPage = lazy(() => import('./pages/LandingPage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
 function RequireAuth() {
-  const { token, bootstrapping } = useAuth()
+  const { user, bootstrapping } = useAuth()
   const location = useLocation()
 
   if (bootstrapping) {
     return <div className="splash-screen">Warming up the dashboard...</div>
   }
 
-  if (!token) {
+  if (!user) {
     return <Navigate to="/" replace state={{ from: location }} />
   }
 
@@ -38,14 +38,14 @@ function RequireAuth() {
 }
 
 function RequireAdmin() {
-  const { token, bootstrapping, user } = useAuth()
+  const { user, bootstrapping } = useAuth()
   const location = useLocation()
 
   if (bootstrapping) {
     return <div className="splash-screen">Warming up the dashboard...</div>
   }
 
-  if (!token) {
+  if (!user) {
     return <Navigate to="/" replace state={{ from: location }} />
   }
 
@@ -57,14 +57,14 @@ function RequireAdmin() {
 }
 
 export default function App() {
-  const { token } = useAuth()
+  const { user } = useAuth()
 
   return (
     <Routes>
       <Route
         path="/"
         element={
-          token ? (
+          user ? (
             <Navigate to="/dashboard" replace />
           ) : (
             <Suspense fallback={<PageLoader />}>
