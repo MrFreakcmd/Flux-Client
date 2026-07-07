@@ -84,3 +84,10 @@ jobs:
             ${{ env.REGISTRY }}/${{ steps.ghcr_owner.outputs.owner_lc }}/flux-client-frontend:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          no-cache: true
+
+      - name: Verify bundle contains expected routes
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ steps.ghcr_owner.outputs.owner_lc }}/flux-client-frontend:latest"
+          docker run --rm "$IMAGE" sh -c "grep -rq 'admin/settings' /usr/share/nginx/html/assets/" || (echo "ERROR: admin/settings route not found in compiled bundle" && exit 1)
+          echo "✓ Bundle verification passed: admin/settings route found"

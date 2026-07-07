@@ -3,6 +3,7 @@ import Layout from './components/Layout'
 import { useAuth } from './context/AuthContext'
 import AccountPage from './pages/AccountPage'
 import AdminDashboardPage from './pages/AdminDashboardPage'
+import AdminSettingsPage from './pages/AdminSettingsPage'
 import AdminUsersPage from './pages/AdminUsersPage'
 import AdminUserDetailsPage from './pages/AdminUserDetailsPage'
 import AnnouncementsPage from './pages/AnnouncementsPage'
@@ -74,6 +75,7 @@ export default function App() {
         <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
         <Route path="/admin/users" element={<AdminUsersPage />} />
         <Route path="/admin/users/:userId" element={<AdminUserDetailsPage />} />
+        <Route path="/admin/settings" element={<AdminSettingsPage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
