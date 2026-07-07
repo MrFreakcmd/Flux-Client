@@ -130,14 +130,16 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="stack">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)', width: '100%', maxWidth: '1280px', margin: '0 auto', padding: '0 var(--space-md)' }}>
       {/* Hero Section */}
       <Card glass>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-lg)' }}>
           <div>
-            <p className="eyebrow">Account</p>
+            <p style={{ fontSize: 'var(--font-size-sm)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-accent)', margin: 0 }}>Account</p>
             <h1>Your identity, security, and activity.</h1>
-            <p className="hero-text">Manage your Flux profile, API keys, linked accounts, and account history.</p>
+            <p style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-neutral-400)', margin: 0, lineHeight: 1.6 }}>
+              Manage your Flux profile, API keys, linked accounts, and account history.
+            </p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', flexShrink: 0 }}>
             {user?.avatar ? (
@@ -166,9 +168,7 @@ export default function AccountPage() {
             )}
             <div>
               <p style={{ fontWeight: 'bold', margin: '0 0 var(--space-xs) 0' }}>{user?.username}</p>
-              <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-neutral-500)', margin: 0 }}>
-                {user?.email}
-              </p>
+              <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-neutral-500)', margin: 0 }}>{user?.email}</p>
             </div>
           </div>
         </div>
@@ -192,7 +192,7 @@ export default function AccountPage() {
       {newSecret && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <Card>
-            <p className="eyebrow">API Key Secret</p>
+            <p style={{ fontSize: 'var(--font-size-sm)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-neutral-400)', margin: 0, marginBottom: 'var(--space-sm)' }}>API Key Secret</p>
             <p style={{ marginBottom: 'var(--space-md)' }}>Your new API key secret (shown only once):</p>
             <div
               style={{
@@ -212,7 +212,7 @@ export default function AccountPage() {
 
       {/* Profile & Linked Accounts */}
       <motion.div
-        className="dashboard-grid"
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 'var(--space-md)', width: '100%' }}
         variants={staggerContainerVariants}
         initial="hidden"
         animate="visible"
@@ -220,23 +220,22 @@ export default function AccountPage() {
         {/* Profile Form */}
         <motion.div variants={staggerItemVariants}>
           <Card>
-            <p className="eyebrow">Profile</p>
-            <h3>Public details</h3>
+            <p style={{ fontSize: 'var(--font-size-sm)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-neutral-400)', margin: 0, marginBottom: 'var(--space-sm)' }}>Profile</p>
+            <h3 style={{ margin: 0, marginBottom: 'var(--space-md)' }}>Public details</h3>
             <form onSubmit={updateProfile} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
               <Input
-                label="Username"
+                type="text"
+                placeholder="Username"
                 value={profileForm.username}
-                onChange={(event) => setProfileForm({ ...profileForm, username: event.target.value })}
-                isRequired
+                onChange={(e) => setProfileForm({ ...profileForm, username: e.target.value })}
               />
               <Input
-                label="Avatar URL"
                 type="url"
+                placeholder="Avatar URL"
                 value={profileForm.avatar}
-                onChange={(event) => setProfileForm({ ...profileForm, avatar: event.target.value })}
-                helpText="Public image URL for your profile picture"
+                onChange={(e) => setProfileForm({ ...profileForm, avatar: e.target.value })}
               />
-              <Button variant="primary" type="submit">
+              <Button variant="primary" type="submit" size="md">
                 Save profile
               </Button>
             </form>
@@ -246,11 +245,11 @@ export default function AccountPage() {
         {/* Linked Accounts */}
         <motion.div variants={staggerItemVariants}>
           <Card>
-            <p className="eyebrow">Linked</p>
-            <h3>Connected accounts</h3>
+            <p style={{ fontSize: 'var(--font-size-sm)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-neutral-400)', margin: 0, marginBottom: 'var(--space-sm)' }}>Linked</p>
+            <h3 style={{ margin: 0, marginBottom: 'var(--space-md)' }}>Connected accounts</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
               {linked.length === 0 ? (
-                <p style={{ color: 'var(--color-neutral-500)' }}>No linked accounts</p>
+                <p style={{ color: 'var(--color-neutral-500)', margin: 0 }}>No linked accounts</p>
               ) : (
                 linked.map((account) => (
                   <div
@@ -283,27 +282,27 @@ export default function AccountPage() {
       {/* API Keys */}
       <motion.div variants={staggerContainerVariants} initial="hidden" whileInView="visible" viewport={{ once: true }}>
         <Card>
-          <p className="eyebrow">API</p>
-          <h3>Personal access keys</h3>
+          <p style={{ fontSize: 'var(--font-size-sm)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-neutral-400)', margin: 0, marginBottom: 'var(--space-sm)' }}>API</p>
+          <h3 style={{ margin: 0, marginBottom: 'var(--space-md)' }}>Personal access keys</h3>
 
           {/* Create Key Form */}
-          <form onSubmit={createApiKey} style={{ display: 'flex', gap: 'var(--space-md)', marginBottom: 'var(--space-lg)' }}>
-            <Input
-              value={keyName}
-              onChange={(event) => setKeyName(event.target.value)}
-              label="Key name"
-              placeholder="My API Key"
-            />
-            <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-              <Button variant="primary" type="submit">
-                Create key
-              </Button>
+          <form onSubmit={createApiKey} style={{ display: 'flex', gap: 'var(--space-md)', marginBottom: 'var(--space-lg)', alignItems: 'flex-end' }}>
+            <div style={{ flex: 1 }}>
+              <Input
+                type="text"
+                placeholder="Key name"
+                value={keyName}
+                onChange={(e) => setKeyName(e.target.value)}
+              />
             </div>
+            <Button variant="primary" type="submit" size="md">
+              Create key
+            </Button>
           </form>
 
           {/* API Keys List */}
           {apiKeys.length === 0 ? (
-            <p style={{ color: 'var(--color-neutral-500)' }}>No API keys yet</p>
+            <p style={{ color: 'var(--color-neutral-500)', margin: 0 }}>No API keys yet</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
               {apiKeys.map((apiKey) => (
@@ -341,7 +340,7 @@ export default function AccountPage() {
 
       {/* Security & Session Status */}
       <motion.div
-        className="dashboard-grid"
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 'var(--space-md)', width: '100%' }}
         variants={staggerContainerVariants}
         initial="hidden"
         whileInView="visible"
@@ -349,8 +348,8 @@ export default function AccountPage() {
       >
         <motion.div variants={staggerItemVariants}>
           <Card>
-            <p className="eyebrow">Security</p>
-            <h3>Session status</h3>
+            <p style={{ fontSize: 'var(--font-size-sm)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-neutral-400)', margin: 0, marginBottom: 'var(--space-sm)' }}>Security</p>
+            <h3 style={{ margin: 0, marginBottom: 'var(--space-md)' }}>Session status</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>Role</span>
@@ -362,7 +361,7 @@ export default function AccountPage() {
                   {user?.discord_id}
                 </code>
               </div>
-              <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-neutral-500)', marginTop: 'var(--space-md)' }}>
+              <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-neutral-500)', marginTop: 'var(--space-md)', margin: 0 }}>
                 Flux uses Discord OAuth for login. Password and 2FA features are not implemented because password authentication is not used.
               </p>
             </div>
@@ -372,19 +371,18 @@ export default function AccountPage() {
 
       {/* Activity - Coin Ledger & Audit */}
       <motion.div
-        className="dashboard-grid"
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 'var(--space-md)', width: '100%' }}
         variants={staggerContainerVariants}
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true }}
       >
-        {/* Coin Ledger */}
         <motion.div variants={staggerItemVariants}>
           <Card>
-            <p className="eyebrow">Ledger</p>
-            <h3>Coin activity</h3>
+            <p style={{ fontSize: 'var(--font-size-sm)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-neutral-400)', margin: 0, marginBottom: 'var(--space-sm)' }}>Ledger</p>
+            <h3 style={{ margin: 0, marginBottom: 'var(--space-md)' }}>Coin activity</h3>
             {activity.ledger.length === 0 ? (
-              <p style={{ color: 'var(--color-neutral-500)' }}>No coin transactions yet</p>
+              <p style={{ color: 'var(--color-neutral-500)', margin: 0 }}>No coin transactions yet</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
                 {activity.ledger.map((entry) => (
@@ -412,13 +410,12 @@ export default function AccountPage() {
           </Card>
         </motion.div>
 
-        {/* Audit Log */}
         <motion.div variants={staggerItemVariants}>
           <Card>
-            <p className="eyebrow">Audit</p>
-            <h3>Recent actions</h3>
+            <p style={{ fontSize: 'var(--font-size-sm)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-neutral-400)', margin: 0, marginBottom: 'var(--space-sm)' }}>Audit</p>
+            <h3 style={{ margin: 0, marginBottom: 'var(--space-md)' }}>Recent actions</h3>
             {activity.audit.length === 0 ? (
-              <p style={{ color: 'var(--color-neutral-500)' }}>No recent actions</p>
+              <p style={{ color: 'var(--color-neutral-500)', margin: 0 }}>No recent actions</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
                 {activity.audit.map((entry) => (
@@ -445,262 +442,6 @@ export default function AccountPage() {
           </Card>
         </motion.div>
       </motion.div>
-    </div>
-  )
-}
-
-
-  async function loadAccount(): Promise<void> {
-    try {
-      const [activityData, linkedData, keysData] = await Promise.all([
-        apiFetch<ActivityData>('/api/account/activity'),
-        apiFetch<{ accounts: LinkedAccount[] }>('/api/account/linked-accounts'),
-        apiFetch<{ api_keys: ApiKey[] }>('/api/account/api-keys'),
-      ])
-      setActivity(activityData)
-      setLinked(linkedData.accounts || [])
-      setApiKeys(keysData.api_keys || [])
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to load account data')
-    }
-  }
-
-  useEffect(() => {
-    setProfileForm({ username: user?.username || '', avatar: user?.avatar || '' })
-    loadAccount()
-  }, [user?.username, user?.avatar])
-
-  async function updateProfile(event: React.FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault()
-    setMessage(null)
-    try {
-      await apiFetch('/api/account/profile', {
-        method: 'PATCH',
-        body: profileForm,
-      })
-      await refreshUser()
-      setMessage('Profile updated.')
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to update profile')
-    }
-  }
-
-  async function createApiKey(event: React.FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault()
-    setMessage(null)
-    try {
-      const data = await apiFetch<{ secret: string }>('/api/account/api-keys', {
-        method: 'POST',
-        body: { name: keyName },
-      })
-      setNewSecret(data.secret)
-      await loadAccount()
-      setMessage('API key created. Copy it now; it will not be shown again.')
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to create API key')
-    }
-  }
-
-  async function revokeApiKey(id: string): Promise<void> {
-    setMessage(null)
-    try {
-      await apiFetch(`/api/account/api-keys/${id}`, { method: 'DELETE' })
-      await loadAccount()
-      setMessage('API key revoked.')
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to revoke API key')
-    }
-  }
-
-  return (
-    <div className="stack">
-      <section className="dashboard-hero glass-card">
-        <div>
-          <p className="eyebrow">Account</p>
-          <h1>Your identity, security, and activity.</h1>
-          <p className="hero-text">Manage your Flux profile, API keys, linked accounts, and account history.</p>
-        </div>
-        <div className="profile-card">
-          {user?.avatar ? (
-            <img src={user.avatar} alt="" />
-          ) : (
-            <div className="avatar-fallback">{user?.username?.[0] || 'F'}</div>
-          )}
-          <div>
-            <strong>{user?.username}</strong>
-            <span>{user?.email}</span>
-          </div>
-        </div>
-      </section>
-
-      {message && <div className="glass-card notice">{message}</div>}
-      {newSecret && <div className="code-block">New API key: {newSecret}</div>}
-
-      <section className="dashboard-grid">
-        <article className="glass-card panel">
-          <div className="panel-header">
-            <div>
-              <p className="eyebrow">Profile</p>
-              <h3>Public details</h3>
-            </div>
-          </div>
-          <form className="form-grid" onSubmit={updateProfile}>
-            <label className="field">
-              <span>Username</span>
-              <input
-                className="input"
-                value={profileForm.username}
-                onChange={(event) =>
-                  setProfileForm({ ...profileForm, username: event.target.value })
-                }
-              />
-            </label>
-            <label className="field">
-              <span>Avatar URL</span>
-              <input
-                className="input"
-                value={profileForm.avatar}
-                onChange={(event) =>
-                  setProfileForm({ ...profileForm, avatar: event.target.value })
-                }
-              />
-            </label>
-            <button className="button button-primary" type="submit">
-              Save profile
-            </button>
-          </form>
-        </article>
-
-        <article className="glass-card panel">
-          <div className="panel-header">
-            <div>
-              <p className="eyebrow">Linked</p>
-              <h3>Connected accounts</h3>
-            </div>
-          </div>
-          <div className="list-stack">
-            {linked.map((account) => (
-              <div className="list-row" key={account.provider}>
-                <div>
-                  <strong>{account.provider}</strong>
-                  <span>{account.identifier || 'Not linked'}</span>
-                </div>
-                <span className={`status-chip ${account.connected ? 'online' : 'danger'}`}>
-                  {account.connected ? 'Connected' : 'Missing'}
-                </span>
-              </div>
-            ))}
-          </div>
-        </article>
-      </section>
-
-      <section className="dashboard-grid">
-        <article className="glass-card panel">
-          <div className="panel-header">
-            <div>
-              <p className="eyebrow">API</p>
-              <h3>Personal access keys</h3>
-            </div>
-          </div>
-          <form className="terminal-input-row" onSubmit={createApiKey}>
-            <input
-              className="input terminal-input"
-              value={keyName}
-              onChange={(event) => setKeyName(event.target.value)}
-            />
-            <button className="button button-primary" type="submit">
-              Create key
-            </button>
-          </form>
-          <div className="list-stack spacious">
-            {apiKeys.map((apiKey) => (
-              <div className="list-row" key={apiKey.id}>
-                <div>
-                  <strong>{apiKey.name}</strong>
-                  <span>
-                    {apiKey.prefix} - created {formatDate(apiKey.created_at)} - last used{' '}
-                    {formatDate(apiKey.last_used_at)}
-                  </span>
-                </div>
-                <button
-                  className="button button-ghost"
-                  type="button"
-                  onClick={() => revokeApiKey(apiKey.id)}
-                  disabled={Boolean(apiKey.revoked_at)}
-                >
-                  {apiKey.revoked_at ? 'Revoked' : 'Revoke'}
-                </button>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        <article className="glass-card panel">
-          <div className="panel-header">
-            <div>
-              <p className="eyebrow">Security</p>
-              <h3>Session status</h3>
-            </div>
-          </div>
-          <div className="stat-grid compact">
-            <div className="mini-metric">
-              <span>Role</span>
-              <strong>{user?.is_admin ? 'Admin' : 'Client'}</strong>
-            </div>
-            <div className="mini-metric">
-              <span>Discord</span>
-              <strong>{user?.discord_id}</strong>
-            </div>
-          </div>
-          <p className="muted">
-            Flux currently uses Discord OAuth for login. Password and 2FA pages from MythicalDash are
-            intentionally not copied because this app does not use password authentication.
-          </p>
-        </article>
-      </section>
-
-      <section className="dashboard-grid">
-        <article className="glass-card panel">
-          <div className="panel-header">
-            <div>
-              <p className="eyebrow">Ledger</p>
-              <h3>Coin activity</h3>
-            </div>
-          </div>
-          <div className="list-stack">
-            {activity.ledger.map((entry) => (
-              <div className="list-row" key={entry.id}>
-                <div>
-                  <strong>{entry.description}</strong>
-                  <span>
-                    {entry.type} - {formatDate(entry.created_at)}
-                  </span>
-                </div>
-                <span className="status-chip neutral">{entry.amount}</span>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        <article className="glass-card panel">
-          <div className="panel-header">
-            <div>
-              <p className="eyebrow">Audit</p>
-              <h3>Recent actions</h3>
-            </div>
-          </div>
-          <div className="list-stack">
-            {activity.audit.map((entry) => (
-              <div className="list-row" key={entry.id}>
-                <div>
-                  <strong>{entry.action}</strong>
-                  <span>{formatDate(entry.created_at)} - {entry.ip_address || 'local'}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </article>
-      </section>
     </div>
   )
 }

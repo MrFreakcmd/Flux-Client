@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test:phase3": "playwright test tests/phase3-quality-gates.ts",
+    "test:phase3:ui": "playwright test tests/phase3-quality-gates.ts --ui",
+    "test:phase3:debug": "playwright test tests/phase3-quality-gates.ts --debug",
+    "test:phase3:report": "playwright show-report tests/results"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -20,6 +24,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.1",
