@@ -1,7 +1,10 @@
+"""Image hosting and management API with secure URL generation."""
 from __future__ import annotations
 
 import os
 import uuid
+import hmac
+import hashlib
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import desc
@@ -18,6 +21,30 @@ router = APIRouter()
 ALLOWED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/gif", "image/webp"}
 
 
+def _generate_image_token(image_id: str) -> str:
+    """Generate HMAC-based token for secure image access.
+
+    Never expose user IDs in URLs. Generate a token that can be
+    verified without database lookup (constant-time comparison).
+    """
+    message = image_id.encode("utf-8")
+    signature = hmac.new(
+        settings.SECRET_KEY.encode("utf-8"),
+        message,
+        hashlib.sha256
+    ).hexdigest()
+    return signature[:16]  # Use first 16 chars of hash
+
+
+def _verify_image_token(image_id: str, provided_token: str) -> bool:
+    """Verify image token using constant-time comparison.
+
+    Prevents timing attacks on token verification.
+    """
+    expected_token = _generate_image_token(image_id)
+    return hmac.compare_digest(expected_token, provided_token)
+
+
 def _upload_root() -> str:
     root = settings.IMAGE_UPLOAD_DIR
     os.makedirs(root, exist_ok=True)
@@ -25,7 +52,9 @@ def _upload_root() -> str:
 
 
 def _settings_for_user(db: Session, user: User) -> UserImageSettings:
-    image_settings = db.query(UserImageSettings).filter(UserImageSettings.user_id == user.id).first()
+    image_settings = db.query(UserImageSettings).filter(
+        UserImageSettings.user_id == user.id
+    ).first()
     if image_settings is None:
         image_settings = UserImageSettings(user_id=user.id)
         db.add(image_settings)
@@ -34,13 +63,21 @@ def _settings_for_user(db: Session, user: User) -> UserImageSettings:
 
 
 def _image_payload(image: UploadedImage) -> dict:
+    """Generate image response with secure token-based URL."""
+    token = _generate_image_token(str(image.id))
+    # URL format: /uploads/{token}/{image_id}/{filename}
+    # Prevents user enumeration (token required to access)
+    secure_url = (
+        f"{settings.BACKEND_PUBLIC_URL.rstrip('/')}/uploads/"
+        f"{token}/{image.id}/{image.filename}"
+    )
     return {
         "id": str(image.id),
         "filename": image.filename,
         "original_filename": image.original_filename,
         "content_type": image.content_type,
         "size_bytes": image.size_bytes,
-        "public_url": image.public_url,
+        "public_url": secure_url,
         "created_at": image.created_at,
     }
 
@@ -107,9 +144,13 @@ async def upload_image(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """Upload an image file."""
     image_settings = _settings_for_user(db, current_user)
     if not image_settings.enabled:
-        raise HTTPException(status_code=403, detail="Image hosting is disabled for your account")
+        raise HTTPException(
+            status_code=403,
+            detail="Image hosting is disabled for your account"
+        )
 
     if file.content_type not in ALLOWED_IMAGE_TYPES:
         raise HTTPException(status_code=400, detail="Unsupported image type")
@@ -117,7 +158,10 @@ async def upload_image(
     raw = await file.read()
     max_bytes = settings.IMAGE_UPLOAD_MAX_MB * 1024 * 1024
     if len(raw) > max_bytes:
-        raise HTTPException(status_code=400, detail=f"Image exceeds {settings.IMAGE_UPLOAD_MAX_MB} MB")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Image exceeds {settings.IMAGE_UPLOAD_MAX_MB} MB"
+        )
 
     extension = os.path.splitext(file.filename or "")[1].lower()
     if extension not in {".png", ".jpg", ".jpeg", ".gif", ".webp"}:
@@ -130,14 +174,15 @@ async def upload_image(
 
     image_id = uuid.uuid4()
     filename = f"{image_id}{extension}"
-    user_dir = os.path.join(_upload_root(), str(current_user.id))
-    os.makedirs(user_dir, exist_ok=True)
-    storage_path = os.path.join(user_dir, filename)
+    # Store in a directory keyed by image ID, not user ID (prevents enumeration)
+    storage_dir = os.path.join(_upload_root(), str(image_id))
+    os.makedirs(storage_dir, exist_ok=True)
+    storage_path = os.path.join(storage_dir, filename)
 
     with open(storage_path, "wb") as target:
         target.write(raw)
 
-    public_url = f"{settings.BACKEND_PUBLIC_URL.rstrip('/')}/uploads/{current_user.id}/{filename}"
+    # Note: public_url is generated on-the-fly in _image_payload
     image = UploadedImage(
         id=image_id,
         user_id=current_user.id,
@@ -146,14 +191,18 @@ async def upload_image(
         content_type=file.content_type,
         size_bytes=len(raw),
         storage_path=storage_path,
-        public_url=public_url,
+        public_url=None,  # Generated at request time
     )
     db.add(image)
     db.add(
         AuditLog(
             user_id=current_user.id,
             action="image_upload",
-            details={"image_id": str(image_id), "size_bytes": len(raw), "content_type": file.content_type},
+            details={
+                "image_id": str(image_id),
+                "size_bytes": len(raw),
+                "content_type": file.content_type
+            },
         )
     )
     db.commit()
@@ -167,7 +216,10 @@ def delete_image(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    image = db.query(UploadedImage).filter(UploadedImage.id == image_id, UploadedImage.user_id == current_user.id).first()
+    """Delete an image owned by the current user."""
+    image = db.query(UploadedImage).filter(
+        UploadedImage.id == image_id, UploadedImage.user_id == current_user.id
+    ).first()
     if image is None:
         raise HTTPException(status_code=404, detail="Image not found")
 
@@ -183,3 +235,43 @@ def delete_image(
     )
     db.commit()
     return {"status": "deleted", "image_id": str(image_id)}
+
+
+@router.get("/{token}/{image_id}/{filename}")
+async def serve_image(
+    token: str,
+    image_id: uuid.UUID,
+    filename: str,
+    db: Session = Depends(get_db),
+):
+    """Serve image file with token verification to prevent user enumeration.
+
+    Token is HMAC-based and verified without database lookup.
+    Prevents direct access to images by ID; requires valid token.
+    """
+    # Verify token matches image_id (constant-time comparison)
+    if not _verify_image_token(str(image_id), token):
+        raise HTTPException(status_code=403, detail="Invalid or missing token")
+
+    # Verify image exists in database (security: confirm ownership exists)
+    image = db.query(UploadedImage).filter(
+        UploadedImage.id == image_id
+    ).first()
+    if image is None:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    # Verify filename matches (prevent directory traversal)
+    if image.filename != filename:
+        raise HTTPException(status_code=404, detail="Invalid filename")
+
+    # Verify file exists on disk
+    if not os.path.exists(image.storage_path):
+        raise HTTPException(status_code=404, detail="File not found")
+
+    # Serve the file
+    from fastapi.responses import FileResponse
+    return FileResponse(
+        path=image.storage_path,
+        media_type=image.content_type,
+        filename=image.original_filename,
+    )
