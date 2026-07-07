@@ -1,6 +1,11 @@
 import { useEffect, useState, FormEvent, ChangeEvent } from 'react'
+import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { apiFetch } from '../lib/api'
+import { Button, Card, Input, Badge, PageTransition } from '../components'
+import { useScrollReveal, staggerContainerVariants, staggerItemVariants } from '../hooks'
+import { useAriaLive } from '../hooks/useA11y'
+import styles from './CommunityPage.module.css'
 
 interface LeaderboardUser {
   id: string
@@ -23,7 +28,11 @@ interface SearchUser {
   avatar: string | null
 }
 
-const categories = ['coins', 'servers', 'rewards']
+const categories = [
+  { value: 'coins', label: 'Coins' },
+  { value: 'servers', label: 'Servers' },
+  { value: 'rewards', label: 'Rewards' },
+]
 
 export default function CommunityPage() {
   const { user, refreshUser } = useAuth()
@@ -34,15 +43,24 @@ export default function CommunityPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [giftAmount, setGiftAmount] = useState<string>('1')
   const [message, setMessage] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const { ref: leaderboardRef, inView: leaderboardInView } = useScrollReveal()
+  const { announcerRef, announce } = useAriaLive()
 
   async function loadLeaderboard(nextCategory: string = category): Promise<void> {
+    setLoading(true)
     try {
       const data = await apiFetch<{ leaders: LeaderboardUser[] }>(
         `/api/community/leaderboard?category=${encodeURIComponent(nextCategory)}`
       )
       setLeaders(data.leaders || [])
+      announce(`${(data.leaders || []).length} players loaded for ${nextCategory} leaderboard`)
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to load leaderboard')
+      const msg = err instanceof Error ? err.message : 'Failed to load leaderboard'
+      setMessage(msg)
+      announce(msg, 'assertive')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -58,8 +76,11 @@ export default function CommunityPage() {
         `/api/community/search?query=${encodeURIComponent(query)}`
       )
       setResults(data.users || [])
+      announce(`Found ${(data.users || []).length} players`)
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Search failed')
+      const msg = err instanceof Error ? err.message : 'Search failed'
+      setMessage(msg)
+      announce(msg, 'assertive')
     }
   }
 
@@ -68,8 +89,11 @@ export default function CommunityPage() {
     try {
       const data = await apiFetch<{ profile: UserProfile }>(`/api/community/profile/${id}`)
       setProfile(data.profile)
+      announce(`Profile loaded for ${data.profile.username}`)
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to load profile')
+      const msg = err instanceof Error ? err.message : 'Failed to load profile'
+      setMessage(msg)
+      announce(msg, 'assertive')
     }
   }
 
@@ -85,94 +109,186 @@ export default function CommunityPage() {
           amount: Number(giftAmount),
         },
       })
-      setMessage(`Gift sent to ${data.recipient.username}.`)
+      const msg = `Gift sent to ${data.recipient.username}.`
+      setMessage(msg)
+      announce(msg)
       await refreshUser()
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to send gift')
+      const msg = err instanceof Error ? err.message : 'Failed to send gift'
+      setMessage(msg)
+      announce(msg, 'assertive')
     }
   }
 
   return (
-    <div className="stack">
-      <section className="dashboard-hero glass-card">
-        <div>
-          <p className="eyebrow">Community</p>
-          <h1>Connect with other players.</h1>
-          <p className="hero-text">View leaderboards, find players, and send gifts.</p>
-        </div>
-      </section>
+    <PageTransition>
+      <main className={styles.communityPage}>
+        <div ref={announcerRef} aria-live="polite" aria-atomic="true" style={{ display: 'none' }} />
 
-      {message && <div className="glass-card notice">{message}</div>}
-
-      <section className="dashboard-grid">
-        <article className="glass-card panel">
-          <h3>Leaderboard</h3>
-          <select value={category} onChange={(e: ChangeEvent<HTMLSelectElement>) => setCategory(e.target.value)}>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat.charAt(0).toUpperCase() + cat.slice(1)}
-              </option>
-            ))}
-          </select>
+        {/* Hero */}
+        <motion.section
+          className={styles.hero}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
           <div>
-            {leaders.map((leader) => (
-              <div key={leader.id} style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>
-                  {leader.rank}. {leader.username}
-                </span>
-                <strong>{leader.value}</strong>
-              </div>
-            ))}
+            <h1>Connect with other players.</h1>
+            <p>View leaderboards, find players, and send gifts.</p>
           </div>
-        </article>
+        </motion.section>
 
-        <article className="glass-card panel">
-          <h3>Search Players</h3>
-          <form onSubmit={search}>
-            <input
-              type="text"
-              value={query}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
-              placeholder="Search username"
-            />
-            <button type="submit" className="button button-primary">
-              Search
-            </button>
-          </form>
-          <div>
-            {results.map((result) => (
-              <div key={result.id} style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem' }}>
-                <span>{result.username}</span>
-                <button
-                  onClick={() => openProfile(result.id)}
-                  className="button button-ghost button-sm"
+        {/* Message */}
+        {message && (
+          <motion.div
+            className={styles.messageBanner}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            role={message.includes('failed') ? 'alert' : 'status'}
+          >
+            {message.includes('failed') ? '⚠️' : '✓'} {message}
+          </motion.div>
+        )}
+
+        {/* Leaderboard & Search */}
+        <motion.div
+          className={styles.gridSection}
+          ref={leaderboardRef}
+          initial="hidden"
+          animate={leaderboardInView ? 'visible' : 'hidden'}
+          variants={staggerContainerVariants}
+        >
+          {/* Leaderboard */}
+          <motion.div variants={staggerItemVariants}>
+            <Card className={styles.card}>
+              <h2>Leaderboard</h2>
+              <div className={styles.categorySelect}>
+                <label htmlFor="category">Category:</label>
+                <select
+                  id="category"
+                  value={category}
+                  onChange={(e: ChangeEvent<HTMLSelectElement>) => setCategory(e.target.value)}
+                  className={styles.select}
+                  disabled={loading}
                 >
-                  View
-                </button>
+                  {categories.map((cat) => (
+                    <option key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </option>
+                  ))}
+                </select>
               </div>
-            ))}
-          </div>
-        </article>
-      </section>
 
-      {profile && (
-        <section className="glass-card">
-          <h3>{profile.username}</h3>
-          <p>Coins: {profile.coins}</p>
-          <p>Servers: {profile.servers_count}</p>
-          <form onSubmit={sendGift}>
-            <input
-              type="number"
-              value={giftAmount}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setGiftAmount(e.target.value)}
-              min="1"
-            />
-            <button type="submit" className="button button-primary">
-              Send Gift
-            </button>
-          </form>
-        </section>
-      )}
-    </div>
+              {loading ? (
+                <div className={styles.loadingState}>
+                  <div className={styles.spinner} />
+                  <p>Loading leaderboard...</p>
+                </div>
+              ) : (
+                <div className={styles.leaderboardList}>
+                  {leaders.map((leader) => (
+                    <div key={leader.id} className={styles.leaderboardRow}>
+                      <div className={styles.rankBadge}>{leader.rank}</div>
+                      <span className={styles.username}>{leader.username}</span>
+                      <strong className={styles.value}>{leader.value}</strong>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </motion.div>
+
+          {/* Search */}
+          <motion.div variants={staggerItemVariants}>
+            <Card className={styles.card}>
+              <h2>Search Players</h2>
+              <form onSubmit={search} className={styles.searchForm}>
+                <Input
+                  type="text"
+                  value={query}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
+                  placeholder="Search username"
+                  aria-label="Search players by username"
+                />
+                <Button type="submit" variant="primary">
+                  Search
+                </Button>
+              </form>
+
+              {results.length > 0 && (
+                <div className={styles.searchResults}>
+                  {results.map((result) => (
+                    <div key={result.id} className={styles.searchRow}>
+                      {result.avatar && (
+                        <img src={result.avatar} alt={result.username} className={styles.avatar} />
+                      )}
+                      <span className={styles.username}>{result.username}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openProfile(result.id)}
+                        aria-label={`View ${result.username}'s profile`}
+                      >
+                        View
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </motion.div>
+        </motion.div>
+
+        {/* Profile */}
+        {profile && (
+          <motion.section
+            className={styles.profileSection}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <Card className={styles.profileCard}>
+              <div className={styles.profileHeader}>
+                {profile.avatar && (
+                  <img src={profile.avatar} alt={profile.username} className={styles.profileAvatar} />
+                )}
+                <div>
+                  <h2>{profile.username}</h2>
+                  <div className={styles.profileStats}>
+                    <Badge variant="primary">{profile.coins} coins</Badge>
+                    <Badge variant="secondary">{profile.servers_count} servers</Badge>
+                  </div>
+                </div>
+              </div>
+
+              <form onSubmit={sendGift} className={styles.giftForm}>
+                <label htmlFor="giftAmount">Send Gift Amount:</label>
+                <div className={styles.giftInputGroup}>
+                  <Input
+                    id="giftAmount"
+                    type="number"
+                    value={giftAmount}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setGiftAmount(e.target.value)}
+                    min="1"
+                    aria-label="Gift amount in coins"
+                  />
+                  <Button type="submit" variant="success">
+                    Send Gift
+                  </Button>
+                </div>
+              </form>
+
+              <Button
+                variant="ghost"
+                onClick={() => setProfile(null)}
+                aria-label="Close profile"
+              >
+                Close
+              </Button>
+            </Card>
+          </motion.section>
+        )}
+      </main>
+    </PageTransition>
   )
 }

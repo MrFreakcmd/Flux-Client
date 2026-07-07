@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 import { apiFetch } from '../lib/api'
+import { Card, Badge, PageTransition } from '../components'
+import { useScrollReveal, staggerContainerVariants, staggerItemVariants } from '../hooks'
+import { useAriaLive } from '../hooks/useA11y'
+import styles from './AnnouncementsPage.module.css'
 
 interface Announcement {
   id: string
@@ -10,48 +15,124 @@ interface Announcement {
 }
 
 function formatDate(value: string | null | undefined): string {
-  return value ? new Date(value).toLocaleDateString() : ''
+  if (!value) return ''
+  return new Date(value).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
 }
 
 export default function AnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
-  const [message, setMessage] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const { ref: announcementsRef, inView: announcementsInView } = useScrollReveal()
+  const { announcerRef, announce } = useAriaLive()
 
   useEffect(() => {
-    apiFetch<{ announcements: Announcement[] }>('/api/announcements')
-      .then((data) => setAnnouncements(data.announcements || []))
-      .catch((err) => setMessage(err instanceof Error ? err.message : 'Failed to load announcements'))
-  }, [])
+    async function loadAnnouncements() {
+      try {
+        const data = await apiFetch<{ announcements: Announcement[] }>('/api/announcements')
+        setAnnouncements(data.announcements || [])
+        announce(`${data.announcements?.length || 0} announcements loaded`)
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to load announcements'
+        setError(message)
+        announce(message, 'assertive')
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadAnnouncements()
+  }, [announce])
 
   return (
-    <div className="stack">
-      <section className="dashboard-hero glass-card">
-        <div>
-          <p className="eyebrow">Announcements</p>
-          <h1>News from your hosting team.</h1>
-          <p className="hero-text">
-            Server notices, maintenance windows, and product updates appear here.
-          </p>
-        </div>
-        <span className="status-chip neutral">{announcements.length} posts</span>
-      </section>
+    <PageTransition>
+      <main className={styles.announcementsPage}>
+        <div ref={announcerRef} aria-live="polite" aria-atomic="true" style={{ display: 'none' }} />
 
-      {message && <div className="glass-card notice error">{message}</div>}
+        {/* Hero Section */}
+        <motion.section
+          className={styles.hero}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className={styles.heroContent}>
+            <h1>News from your hosting team.</h1>
+            <p>Server notices, maintenance windows, and product updates appear here.</p>
+          </div>
+          <Badge variant="neutral" size="lg">
+            {announcements.length} {announcements.length === 1 ? 'post' : 'posts'}
+          </Badge>
+        </motion.section>
 
-      <section className="timeline-list">
-        {announcements.map((item) => (
-          <article className="glass-card panel announcement-card" key={item.id}>
-            <p className="eyebrow">{formatDate(item.created_at)}</p>
-            <h3>{item.title}</h3>
-            <p>{item.content}</p>
-          </article>
-        ))}
-        {!announcements.length && (
-          <article className="glass-card panel">
-            <p className="muted">No announcements have been published yet.</p>
-          </article>
+        {/* Error State */}
+        {error && (
+          <motion.div
+            className={styles.errorBanner}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            role="alert"
+          >
+            <span>⚠️</span>
+            <p>{error}</p>
+          </motion.div>
         )}
-      </section>
-    </div>
+
+        {/* Loading State */}
+        {loading && (
+          <motion.div
+            className={styles.loadingState}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <div className={styles.spinner} />
+            <p>Loading announcements...</p>
+          </motion.div>
+        )}
+
+        {/* Announcements List */}
+        {!loading && announcements.length === 0 && !error && (
+          <motion.div
+            className={styles.emptyState}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <p>No announcements have been published yet.</p>
+          </motion.div>
+        )}
+
+        {!loading && announcements.length > 0 && (
+          <motion.section
+            ref={announcementsRef}
+            className={styles.announcementsList}
+            initial="hidden"
+            animate={announcementsInView ? 'visible' : 'hidden'}
+            variants={staggerContainerVariants}
+          >
+            {announcements.map((announcement) => (
+              <motion.div key={announcement.id} variants={staggerItemVariants}>
+                <Card hover className={styles.announcementCard}>
+                  <div className={styles.cardHeader}>
+                    <time className={styles.date} dateTime={announcement.created_at}>
+                      {formatDate(announcement.created_at)}
+                    </time>
+                    {announcement.updated_at !== announcement.created_at && (
+                      <span className={styles.edited}>
+                        (updated {formatDate(announcement.updated_at)})
+                      </span>
+                    )}
+                  </div>
+                  <h3>{announcement.title}</h3>
+                  <p className={styles.content}>{announcement.content}</p>
+                </Card>
+              </motion.div>
+            ))}
+          </motion.section>
+        )}
+      </main>
+    </PageTransition>
   )
 }
