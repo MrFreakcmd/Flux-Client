@@ -27,12 +27,14 @@ app = FastAPI(
 
 app.state.drift_sync_task = None
 
-# CORS configuration
+# CORS configuration - whitelist only allowed origins
+# NOTE: allow_credentials=True cannot be used with allow_origins=["*"]
+# Using specific origins from CORS_ALLOWED_ORIGINS env var with fallback to FRONTEND_URL
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust in production to allowed client hosts
+    allow_origins=settings.get_cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
 )
 
