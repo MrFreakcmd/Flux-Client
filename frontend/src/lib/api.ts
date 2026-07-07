@@ -61,6 +61,7 @@ export async function apiFetch<T = any>(path: string, options: ApiFetchOptions =
     ...options,
     headers,
     body,
+    credentials: 'include', // Send HttpOnly cookies (set by OAuth callback) with requests
   })
 
   const contentType = response.headers.get('content-type') || ''

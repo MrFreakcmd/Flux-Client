@@ -1,23 +1,18 @@
-import { useEffect, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function AuthCallbackPage() {
-  const [searchParams] = useSearchParams()
-  const { loginWithToken } = useAuth()
   const navigate = useNavigate()
-  const [error, setError] = useState<string | null>(null)
+  const { user, bootstrapping, error } = useAuth()
 
   useEffect(() => {
-    const token = searchParams.get('token')
-    if (!token) {
-      setError('Missing dashboard token in the callback URL.')
-      return
+    // Wait for AuthContext to validate the OAuth cookie before navigating.
+    // Once bootstrapping completes and user is set, the OAuth callback succeeded.
+    if (!bootstrapping && user) {
+      navigate('/dashboard', { replace: true })
     }
-
-    loginWithToken(token)
-    navigate('/dashboard', { replace: true })
-  }, [loginWithToken, navigate, searchParams])
+  }, [user, bootstrapping, navigate])
 
   return (
     <div className="callback-screen glass-card">

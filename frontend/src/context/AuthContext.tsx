@@ -24,14 +24,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true
 
     async function loadUser() {
-      if (!token) {
-        setUser(null)
-        setBootstrapping(false)
-        return
-      }
-
       setBootstrapping(true)
       try {
+        // Attempt to fetch /api/auth/me. The backend checks for:
+        // 1. HttpOnly cookie (set by OAuth callback, sent automatically)
+        // 2. Authorization header with Bearer token
+        // This works even if localStorage token is empty.
         const me = await apiFetch('/api/auth/me')
         if (active) {
           setUser(me)
@@ -42,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (active) {
           setTokenState(null)
           setUser(null)
+          // Always show auth errors for debugging OAuth callback failures
           setError(err instanceof Error ? err.message : 'Authentication failed')
         }
       } finally {
