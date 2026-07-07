@@ -139,13 +139,43 @@ class Settings(BaseSettings):
 
     @property
     def get_cors_origins(self) -> list[str]:
-        """Parse CORS_ALLOWED_ORIGINS or fallback to FRONTEND_URL."""
+        """Parse and validate CORS_ALLOWED_ORIGINS or fallback to FRONTEND_URL.
+
+        Rejects:
+        - Wildcards (*) in any position
+        - Malformed URLs
+        - Empty strings
+        """
         if self.CORS_ALLOWED_ORIGINS:
-            return [
+            origins = [
                 origin.strip()
                 for origin in self.CORS_ALLOWED_ORIGINS.split(",")
                 if origin.strip()
             ]
+            # Validate each origin
+            for origin in origins:
+                if "*" in origin:
+                    raise ValueError(
+                        f"CORS_ALLOWED_ORIGINS contains wildcard: {origin}. "
+                        "Wildcards are security risks and not allowed."
+                    )
+                if not (origin.startswith("http://") or origin.startswith("https://")):
+                    raise ValueError(
+                        f"CORS_ALLOWED_ORIGINS contains malformed URL: {origin}. "
+                        "Must start with http:// or https://"
+                    )
+            return origins
+        # Fallback to FRONTEND_URL (validate it too)
+        if "*" in self.FRONTEND_URL:
+            raise ValueError(
+                f"FRONTEND_URL contains wildcard: {self.FRONTEND_URL}. "
+                "Wildcards are not allowed."
+            )
+        if not (self.FRONTEND_URL.startswith("http://") or self.FRONTEND_URL.startswith("https://")):
+            raise ValueError(
+                f"FRONTEND_URL is malformed: {self.FRONTEND_URL}. "
+                "Must start with http:// or https://"
+            )
         return [self.FRONTEND_URL]
 
 
