@@ -65,3 +65,6 @@ redis_data/
 backend/alembic/__pycache__/
 backend/migrations/__pycache__/
 backend/alembic.ini.local
+
+#AI Shop
+.claude
