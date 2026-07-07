@@ -55,6 +55,12 @@ export default function Layout() {
               >
                 User Management
               </NavLink>
+              <NavLink
+                to="/admin/settings"
+                className={({ isActive }) => `nav-link${isActive ? ' is-active' : ''}`}
+              >
+                Application Settings
+              </NavLink>
             </>
           )}
         </nav>
