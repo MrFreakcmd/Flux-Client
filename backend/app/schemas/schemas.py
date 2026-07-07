@@ -260,3 +260,30 @@ class AdminGrantCoinsRequest(BaseModel):
 
     amount: Decimal = Field(..., gt=0, max_digits=12, decimal_places=2)
     description: Optional[str] = Field(default="Admin grant", max_length=255)
+
+
+class AdminSuspendUserRequest(BaseModel):
+    """Schema for suspending/unsuspending users."""
+
+    suspend: bool = Field(default=True, description="True to suspend, False to unsuspend")
+
+
+class UpdateSettingRequest(BaseModel):
+    """Schema for updating a single application setting."""
+
+    value: Any = Field(..., description="The new value for the setting")
+
+
+class UpdateSettingsRequest(BaseModel):
+    """Schema for updating multiple application settings.
+
+    Only allows known setting keys to prevent injection.
+    """
+    # Valid setting keys with their expected types
+    app_name: Optional[str] = Field(default=None, max_length=255)
+    logo_url: Optional[str] = Field(default=None, max_length=500)
+    favicon_url: Optional[str] = Field(default=None, max_length=500)
+    primary_color: Optional[str] = Field(default=None, max_length=50)
+    secondary_color: Optional[str] = Field(default=None, max_length=50)
+    footer_text: Optional[str] = Field(default=None, max_length=500)
+    support_email: Optional[str] = Field(default=None, max_length=255)

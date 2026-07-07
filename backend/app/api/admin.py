@@ -7,7 +7,7 @@ import logging
 from app.database import get_db
 from app.models.models import User, AuditLog, CoinLedger, Server
 from app.services.auth_utils import get_current_user
-from app.schemas.schemas import UserOut, AdminUserUpdateRequest, AdminGrantCoinsRequest
+from app.schemas.schemas import UserOut, AdminUserUpdateRequest, AdminGrantCoinsRequest, AdminSuspendUserRequest
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -317,7 +317,7 @@ async def demote_user(
 @router.post("/users/{user_id}/suspend")
 async def suspend_user(
     user_id: str,
-    body: dict,
+    body: AdminSuspendUserRequest,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
@@ -341,12 +341,11 @@ async def suspend_user(
             detail="Cannot suspend admin accounts"
         )
 
-    suspend = body.get("suspend", True)
-    user.is_suspended = suspend
+    user.is_suspended = body.suspend
 
     db.commit()
 
-    action = "suspended" if suspend else "unsuspended"
+    action = "suspended" if body.suspend else "unsuspended"
     logger.info(f"Admin {current_user.username} {action} user {user.username}")
 
     return {
