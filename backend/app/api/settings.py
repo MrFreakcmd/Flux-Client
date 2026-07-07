@@ -33,13 +33,13 @@ def get_all_settings(db: Session) -> dict:
     return settings
 
 
-@router.get("/settings")
+@router.get("")
 def get_settings(db: Session = Depends(get_db)):
     """Get all application settings (public endpoint - anyone can view)."""
     return get_all_settings(db)
 
 
-@router.get("/settings/{key}")
+@router.get("/{key}")
 def get_setting(key: str, db: Session = Depends(get_db)):
     """Get a specific application setting."""
     if key not in DEFAULT_SETTINGS:
@@ -51,7 +51,7 @@ def get_setting(key: str, db: Session = Depends(get_db)):
     return {key: DEFAULT_SETTINGS[key]}
 
 
-@router.put("/settings/{key}")
+@router.put("/{key}")
 def update_setting(
     key: str,
     body: dict,
@@ -79,7 +79,7 @@ def update_setting(
     return {key: value}
 
 
-@router.put("/settings")
+@router.put("")
 def update_settings(
     body: dict,
     current_user: User = Depends(get_current_admin),
@@ -110,7 +110,7 @@ def update_settings(
     return updated
 
 
-@router.post("/settings/reset/{key}")
+@router.post("/reset/{key}")
 def reset_setting(
     key: str,
     current_user: User = Depends(get_current_admin),
