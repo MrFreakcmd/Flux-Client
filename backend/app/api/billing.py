@@ -52,10 +52,14 @@ def _md5(value: str) -> str:
 
 
 def _validate_verify_signature(payload: dict[str, Any]) -> bool:
+    """Validate SSLCommerz webhook signature.
+
+    Rejects webhooks with missing signature or key.
+    """
     verify_sign = payload.get("verify_sign")
     verify_key = payload.get("verify_key")
     if not verify_sign or not verify_key:
-        return True
+        return False
 
     keys = [key.strip() for key in verify_key.split(",") if key.strip()]
     keys.sort()
