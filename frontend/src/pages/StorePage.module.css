@@ -1,0 +1,288 @@
+/**
+ * Store Page Styles
+ * Pricing cards and upgrade forms
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  background: linear-gradient(135deg, rgba(var(--color-primary), 0.1) 0%, rgba(var(--color-accent), 0.05) 100%);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.eyebrow {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-accent);
+  margin: 0;
+}
+
+.heroText {
+  font-size: var(--font-size-base);
+  color: var(--color-neutral-400);
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Messages */
+.successCard {
+  padding: var(--space-md);
+  background: rgba(var(--color-success), 0.1);
+  border-left: 4px solid var(--color-success);
+  border-radius: var(--radius-md);
+}
+
+.errorCard {
+  padding: var(--space-md);
+  background: rgba(var(--color-danger), 0.1);
+  border-left: 4px solid var(--color-danger);
+  border-radius: var(--radius-md);
+}
+
+.messageText {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Pricing Card */
+.pricingCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-md);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cardHeader h3 {
+  font-size: var(--font-size-lg);
+  margin: 0;
+  margin-top: var(--space-xs);
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-neutral-400);
+  margin: 0;
+}
+
+.priceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--space-md);
+}
+
+.priceCard {
+  padding: var(--space-md);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  transition: all var(--duration-normal) var(--ease-in-out);
+}
+
+.priceCard:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.priceHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.priceHeader h4 {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+  flex: 1;
+}
+
+.priceTag {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.amount {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+}
+
+.currency {
+  font-size: var(--font-size-sm);
+  color: var(--color-neutral-400);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.priceDesc {
+  font-size: var(--font-size-sm);
+  color: var(--color-neutral-500);
+  margin: 0;
+  opacity: 0.8;
+}
+
+.resources {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius-sm);
+}
+
+.resourceItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.resourceLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-neutral-400);
+}
+
+.resourceValue {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-success);
+}
+
+/* Forms Grid */
+.formsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-md);
+  width: 100%;
+}
+
+.formCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.selectWrapper {
+  position: relative;
+}
+
+.select {
+  width: 100%;
+  padding: var(--space-sm);
+  border: 2px solid var(--color-neutral-200);
+  border-radius: var(--radius-md);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-base);
+  color: var(--color-neutral-900);
+  background: white;
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--ease-in-out);
+}
+
+.select:hover {
+  border-color: var(--color-neutral-300);
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(80, 80, 200, 0.1);
+}
+
+.select:disabled {
+  background: var(--color-neutral-100);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.submitButton {
+  width: 100%;
+}
+
+.formHint {
+  font-size: var(--font-size-sm);
+  color: var(--color-neutral-400);
+  margin: 0;
+  opacity: 0.7;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    gap: var(--space-md);
+    padding: 0 var(--space-sm);
+  }
+
+  .hero {
+    padding: var(--space-md);
+  }
+
+  .cardHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .priceGrid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+
+  .formsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .resources {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .priceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .resources {
+    grid-template-columns: 1fr;
+  }
+}

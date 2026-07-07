@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { apiFetch } from '../lib/api'
+import { Card, Badge, PageTransition } from '../components'
+import { useScrollReveal, staggerContainerVariants, staggerItemVariants } from '../hooks'
+import styles from './AdminDashboardPage.module.css'
 
 interface AdminStats {
   total_users: number
@@ -16,6 +20,9 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const { ref: statsRef, inView: statsInView } = useScrollReveal()
+  const { ref: usersRef, inView: usersInView } = useScrollReveal()
+
   useEffect(() => {
     apiFetch<AdminStats>('/api/admin/dashboard/stats')
       .then((data) => {
@@ -30,73 +37,139 @@ export default function AdminDashboardPage() {
 
   if (loading) {
     return (
-      <div className="stack">
-        <section className="dashboard-hero glass-card">
-          <p className="eyebrow">Admin Dashboard</p>
-          <h1>Loading...</h1>
-        </section>
-      </div>
+      <PageTransition>
+        <div className={styles.container}>
+          <section className={styles.hero}>
+            <p className={styles.eyebrow}>Admin Dashboard</p>
+            <h1>Loading stats...</h1>
+          </section>
+        </div>
+      </PageTransition>
     )
   }
 
   if (error) {
     return (
-      <div className="stack">
-        <section className="dashboard-hero glass-card">
-          <p className="eyebrow">Admin Dashboard</p>
-          <h1>Error</h1>
-          <p className="error-message">{error}</p>
-        </section>
-      </div>
+      <PageTransition>
+        <div className={styles.container}>
+          <section className={styles.hero}>
+            <p className={styles.eyebrow}>Admin Dashboard</p>
+            <h1>Error</h1>
+            <p className={styles.error}>{error}</p>
+          </section>
+        </div>
+      </PageTransition>
     )
   }
 
   return (
-    <div className="stack">
-      <section className="dashboard-hero glass-card">
-        <div>
-          <p className="eyebrow">Admin</p>
-          <h1>System Overview</h1>
-          <p className="hero-text">Platform statistics and user management.</p>
-        </div>
-      </section>
+    <PageTransition>
+      <div className={styles.container}>
+        <motion.section
+          className={styles.hero}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <div>
+            <p className={styles.eyebrow}>Admin</p>
+            <h1>System Overview</h1>
+            <p className={styles.heroText}>Platform statistics and user management.</p>
+          </div>
+        </motion.section>
 
-      {stats && (
-        <section className="dashboard-grid">
-          <article className="glass-card panel">
-            <p className="eyebrow">Users</p>
-            <h3>{stats.total_users}</h3>
-            <p style={{ opacity: 0.7 }}>{stats.active_users} active</p>
-          </article>
+        {stats && (
+          <>
+            {/* Stats Grid */}
+            <motion.section
+              ref={statsRef}
+              className={styles.statsGrid}
+              variants={staggerContainerVariants}
+              initial="hidden"
+              animate={statsInView ? "visible" : "hidden"}
+            >
+              <motion.div variants={staggerItemVariants}>
+                <Card glass hover>
+                  <div className={styles.statCard}>
+                    <p className={styles.label}>Total Users</p>
+                    <h3 className={styles.value}>{stats.total_users}</h3>
+                    <Badge variant="primary" size="sm">
+                      {stats.active_users} active
+                    </Badge>
+                  </div>
+                </Card>
+              </motion.div>
 
-          <article className="glass-card panel">
-            <p className="eyebrow">Servers</p>
-            <h3>{stats.total_servers}</h3>
-            <p style={{ opacity: 0.7 }}>provisioned</p>
-          </article>
+              <motion.div variants={staggerItemVariants}>
+                <Card glass hover>
+                  <div className={styles.statCard}>
+                    <p className={styles.label}>Servers</p>
+                    <h3 className={styles.value}>{stats.total_servers}</h3>
+                    <p className={styles.sublabel}>provisioned</p>
+                  </div>
+                </Card>
+              </motion.div>
 
-          <article className="glass-card panel">
-            <p className="eyebrow">Coins</p>
-            <h3>{stats.total_coins_issued}</h3>
-            <p style={{ opacity: 0.7 }}>issued</p>
-          </article>
-        </section>
-      )}
+              <motion.div variants={staggerItemVariants}>
+                <Card glass hover>
+                  <div className={styles.statCard}>
+                    <p className={styles.label}>Coins Issued</p>
+                    <h3 className={styles.value}>{stats.total_coins_issued}</h3>
+                    <p className={styles.sublabel}>total circulation</p>
+                  </div>
+                </Card>
+              </motion.div>
+            </motion.section>
 
-      {stats && stats.top_users.length > 0 && (
-        <section className="glass-card panel">
-          <p className="eyebrow">Top Users</p>
-          <h3>Coin leaders</h3>
-          {stats.top_users.map((topUser, idx) => (
-            <div key={topUser.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-              <span>
-                {idx + 1}. {topUser.username}
-              </span>
-              <strong>{topUser.coins} coins</strong>
-            </div>
-          ))}
-        </section>
-      )}
-    </div>
+            {/* Top Users */}
+            {stats.top_users.length > 0 && (
+              <motion.div
+                ref={usersRef}
+                initial={{ opacity: 0, y: 20 }}
+                animate={usersInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.4, delay: 0.2 }}
+              >
+                <Card glass>
+                  <div className={styles.topUsersCard}>
+                    <div className={styles.cardHeader}>
+                      <div>
+                        <p className={styles.label}>Leaderboard</p>
+                        <h3>Top Coin Holders</h3>
+                      </div>
+                      <Badge variant="success">Top {stats.top_users.length}</Badge>
+                    </div>
+
+                    <div className={styles.usersList}>
+                      {stats.top_users.map((topUser, idx) => (
+                        <motion.div
+                          key={topUser.id}
+                          className={styles.userRow}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.05 }}
+                        >
+                          <div className={styles.userRank}>
+                            <Badge variant="secondary" size="sm">
+                              #{idx + 1}
+                            </Badge>
+                          </div>
+                          <div className={styles.userName}>
+                            <strong>{topUser.username}</strong>
+                          </div>
+                          <div className={styles.userCoins}>
+                            <strong>{topUser.coins}</strong>
+                            <span>coins</span>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            )}
+          </>
+        )}
+      </div>
+    </PageTransition>
   )
 }
