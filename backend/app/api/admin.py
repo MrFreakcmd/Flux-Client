@@ -7,7 +7,7 @@ import logging
 from app.database import get_db
 from app.models.models import User, AuditLog, CoinLedger, Server
 from app.services.auth_utils import get_current_user
-from app.schemas.schemas import UserOut
+from app.schemas.schemas import UserOut, AdminUserUpdateRequest, AdminGrantCoinsRequest
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -159,7 +159,7 @@ async def get_user_details(
 @router.patch("/users/{user_id}")
 async def update_user(
     user_id: str,
-    body: dict,
+    body: AdminUserUpdateRequest,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
@@ -170,30 +170,23 @@ async def update_user(
         raise HTTPException(status_code=404, detail="User not found")
 
     # Prevent demoting self
-    if str(current_user.id) == user_id and "is_admin" in body:
-        if body["is_admin"] is False:
-            raise HTTPException(
-                status_code=400,
-                detail="Cannot demote yourself from admin"
-            )
+    if str(current_user.id) == user_id and body.is_admin is False:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot demote yourself from admin"
+        )
 
-    allowed_fields = {
-        "is_admin": bool,
-        "limit_cpu": int,
-        "limit_memory": int,
-        "limit_disk": int,
-        "limit_slots": int
-    }
-
-    for field, field_type in allowed_fields.items():
-        if field in body:
-            value = body[field]
-            if not isinstance(value, field_type):
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Field {field} must be {field_type.__name__}"
-                )
-            setattr(user, field, value)
+    # Update only allowed fields from schema
+    if body.is_admin is not None:
+        user.is_admin = body.is_admin
+    if body.limit_cpu is not None:
+        user.limit_cpu = body.limit_cpu
+    if body.limit_memory is not None:
+        user.limit_memory = body.limit_memory
+    if body.limit_disk is not None:
+        user.limit_disk = body.limit_disk
+    if body.limit_slots is not None:
+        user.limit_slots = body.limit_slots
 
     db.commit()
 
@@ -213,20 +206,20 @@ async def update_user(
 @router.post("/users/{user_id}/grant-coins")
 async def grant_coins(
     user_id: str,
-    body: dict,
+    body: AdminGrantCoinsRequest,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
-    """Grant coins to a user"""
+    """Grant coins to a user."""
     user = db.query(User).filter(User.id == user_id).first()
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    amount = body.get("amount")
-    description = body.get("description", "Admin grant")
+    amount = body.amount
+    description = body.description
 
-    if not amount or amount <= 0:
+    if amount <= 0:
         raise HTTPException(status_code=400, detail="Invalid amount")
 
     amount = Decimal(str(amount))

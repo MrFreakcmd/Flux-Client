@@ -243,3 +243,20 @@ class ServerUpdateRequest(BaseModel):
     memory_limit: Optional[int] = Field(default=None, ge=128, le=32768)
     disk_limit: Optional[int] = Field(default=None, ge=512, le=1048576)
     slots: Optional[int] = Field(default=None, ge=1, le=10)
+
+
+class AdminUserUpdateRequest(BaseModel):
+    """Schema for admin user updates. Only these fields may be modified."""
+
+    is_admin: Optional[bool] = None
+    limit_cpu: Optional[int] = Field(default=None, ge=1, le=10000)
+    limit_memory: Optional[int] = Field(default=None, ge=128, le=131072)
+    limit_disk: Optional[int] = Field(default=None, ge=512, le=10485760)
+    limit_slots: Optional[int] = Field(default=None, ge=1, le=100)
+
+
+class AdminGrantCoinsRequest(BaseModel):
+    """Schema for granting coins to users."""
+
+    amount: Decimal = Field(..., gt=0, max_digits=12, decimal_places=2)
+    description: Optional[str] = Field(default="Admin grant", max_length=255)
