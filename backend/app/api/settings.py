@@ -5,6 +5,7 @@ import logging
 from app.database import get_db
 from app.models.models import SystemSetting, User
 from app.services.auth_utils import get_current_user, get_current_admin
+from app.schemas.schemas import UpdateSettingRequest, UpdateSettingsRequest
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -54,7 +55,7 @@ def get_setting(key: str, db: Session = Depends(get_db)):
 @router.put("/{key}")
 def update_setting(
     key: str,
-    body: dict,
+    body: UpdateSettingRequest,
     current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db),
 ):
@@ -62,7 +63,7 @@ def update_setting(
     if key not in DEFAULT_SETTINGS:
         raise HTTPException(status_code=400, detail="Invalid setting key")
 
-    value = body.get("value")
+    value = body.value
     if value is None:
         raise HTTPException(status_code=400, detail="Value is required")
 
@@ -81,14 +82,15 @@ def update_setting(
 
 @router.put("")
 def update_settings(
-    body: dict,
+    body: UpdateSettingsRequest,
     current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db),
 ):
     """Update multiple application settings at once (admin only)."""
     updated = {}
 
-    for key, value in body.items():
+    # Extract only non-None fields from schema
+    for key, value in body.model_dump(exclude_none=True).items():
         if key not in DEFAULT_SETTINGS:
             raise HTTPException(status_code=400, detail=f"Invalid setting key: {key}")
 
