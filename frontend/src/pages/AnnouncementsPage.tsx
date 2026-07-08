@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { apiFetch } from '../lib/api'
-import { Card, Badge, PageTransition } from '../components'
+import { Card, Badge, PageHeader, PageTransition } from '../components'
 import { useScrollReveal, staggerContainerVariants, staggerItemVariants } from '../hooks'
 import { useAriaLive } from '../hooks/useA11y'
 import styles from './AnnouncementsPage.module.css'
@@ -49,90 +49,96 @@ export default function AnnouncementsPage() {
 
   return (
     <PageTransition>
-      <main className={styles.announcementsPage}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)', width: '100%', maxWidth: '1280px', margin: '0 auto', padding: '0 var(--space-md)' }}>
         <div ref={announcerRef} aria-live="polite" aria-atomic="true" style={{ display: 'none' }} />
 
-        {/* Hero Section */}
-        <motion.section
-          className={styles.hero}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className={styles.heroContent}>
-            <h1>News from your hosting team.</h1>
-            <p>Server notices, maintenance windows, and product updates appear here.</p>
-          </div>
-          <Badge variant="neutral" size="lg">
-            {announcements.length} {announcements.length === 1 ? 'post' : 'posts'}
-          </Badge>
-        </motion.section>
+        <PageHeader
+          title="Announcements"
+          subtitle="Server notices, maintenance windows, and product updates"
+          breadcrumbs={[
+            { label: 'Home', href: '/' },
+            { label: 'Announcements' }
+          ]}
+          actions={
+            <Badge variant="primary" size="md">
+              {announcements.length} {announcements.length === 1 ? 'post' : 'posts'}
+            </Badge>
+          }
+        />
 
         {/* Error State */}
         {error && (
           <motion.div
-            className={styles.errorBanner}
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             role="alert"
           >
-            <span>⚠️</span>
-            <p>{error}</p>
+            <Card variant="default">
+              <div style={{ padding: 'var(--space-md)' }}>
+                <p style={{ color: 'var(--color-danger)', margin: 0 }}>⚠️ {error}</p>
+              </div>
+            </Card>
           </motion.div>
         )}
 
         {/* Loading State */}
         {loading && (
           <motion.div
-            className={styles.loadingState}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <div className={styles.spinner} />
-            <p>Loading announcements...</p>
+            <Card variant="default">
+              <div style={{ padding: 'var(--space-lg)', textAlign: 'center' }}>
+                <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Loading announcements...</p>
+              </div>
+            </Card>
           </motion.div>
         )}
 
-        {/* Announcements List */}
+        {/* Empty State */}
         {!loading && announcements.length === 0 && !error && (
           <motion.div
-            className={styles.emptyState}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <p>No announcements have been published yet.</p>
+            <Card variant="default">
+              <div style={{ padding: 'var(--space-lg)', textAlign: 'center' }}>
+                <p style={{ color: 'var(--text-secondary)', margin: 0 }}>No announcements have been published yet.</p>
+              </div>
+            </Card>
           </motion.div>
         )}
 
+        {/* Announcements Grid */}
         {!loading && announcements.length > 0 && (
           <motion.section
             ref={announcementsRef}
-            className={styles.announcementsList}
+            className="content-grid"
             initial="hidden"
             animate={announcementsInView ? 'visible' : 'hidden'}
             variants={staggerContainerVariants}
           >
             {announcements.map((announcement) => (
               <motion.div key={announcement.id} variants={staggerItemVariants}>
-                <Card hover className={styles.announcementCard}>
-                  <div className={styles.cardHeader}>
-                    <time className={styles.date} dateTime={announcement.created_at}>
+                <Card variant="default">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-md)', paddingBottom: 'var(--space-md)', borderBottom: '1px solid var(--border-color)' }}>
+                    <time style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }} dateTime={announcement.created_at}>
                       {formatDate(announcement.created_at)}
                     </time>
                     {announcement.updated_at !== announcement.created_at && (
-                      <span className={styles.edited}>
-                        (updated {formatDate(announcement.updated_at)})
+                      <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
+                        updated {formatDate(announcement.updated_at)}
                       </span>
                     )}
                   </div>
-                  <h3>{announcement.title}</h3>
-                  <p className={styles.content}>{announcement.content}</p>
+                  <h3 style={{ margin: 'var(--space-md) 0', fontSize: 'var(--font-size-lg)' }}>{announcement.title}</h3>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>{announcement.content}</p>
                 </Card>
               </motion.div>
             ))}
           </motion.section>
         )}
-      </main>
+      </div>
     </PageTransition>
   )
 }

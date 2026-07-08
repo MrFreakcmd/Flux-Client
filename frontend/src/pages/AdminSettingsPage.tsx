@@ -1,7 +1,7 @@
 import { useEffect, useState, ChangeEvent, FormEvent } from 'react'
 import { motion } from 'framer-motion'
 import { apiFetch } from '../lib/api'
-import { Card, Badge, Button, Input, PageTransition } from '../components'
+import { Card, Badge, Button, Input, PageHeader, PageTransition } from '../components'
 import { useScrollReveal } from '../hooks'
 import styles from './AdminSettingsPage.module.css'
 

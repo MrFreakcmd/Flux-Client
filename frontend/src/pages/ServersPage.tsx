@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { apiFetch } from '../lib/api'
-import { Card, Badge, Button, Input, PageTransition } from '../components'
+import { Card, Badge, Button, Input, PageHeader, PageTransition } from '../components'
 import { useScrollReveal } from '../hooks'
 import styles from './ServersPage.module.css'
 
@@ -160,22 +160,15 @@ export default function ServersPage() {
 
   return (
     <PageTransition>
-      <div className={styles.container}>
-        {/* Hero Section */}
-        <motion.section
-          className={styles.hero}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <div>
-            <p className={styles.eyebrow}>Servers</p>
-            <h1>Manage your game servers</h1>
-            <p className={styles.heroText}>
-              Create, configure, and monitor your Calagopus servers.
-            </p>
-          </div>
-        </motion.section>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)', width: '100%', maxWidth: '1280px', margin: '0 auto', padding: '0 var(--space-md)' }}>
+        <PageHeader
+          title="Servers"
+          subtitle="Create, configure, and monitor your Calagopus servers"
+          breadcrumbs={[
+            { label: 'Home', href: '/' },
+            { label: 'Servers' }
+          ]}
+        />
 
         {/* Messages */}
         <AnimatePresence>
@@ -186,16 +179,16 @@ export default function ServersPage() {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.3 }}
             >
-              <Card>
-                <div className={message.includes('failed') || message.includes('Failed') ? styles.errorCard : styles.successCard}>
-                  <p className={styles.messageText}>{message}</p>
+              <Card variant={message.includes('failed') || message.includes('Failed') ? 'default' : 'default'}>
+                <div style={{ padding: 'var(--space-md)', color: message.includes('failed') || message.includes('Failed') ? 'var(--color-danger)' : 'var(--color-success)' }}>
+                  <p style={{ margin: 0 }}>{message}</p>
                 </div>
               </Card>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Content Grid */}
+        {/* Content Grid - Two columns: servers list + forms */}
         {loading ? (
           <motion.div
             initial={{ opacity: 0 }}

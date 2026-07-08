@@ -3,37 +3,49 @@ import clsx from 'clsx'
 import styles from './Card.module.css'
 import { ReactNode } from 'react'
 
+type Variant = 'default' | 'elevated' | 'glass' | 'outline'
+
 interface CardProps {
   children: ReactNode
-  className?: string
+  variant?: Variant
+  header?: ReactNode
+  footer?: ReactNode
   hover?: boolean
-  glass?: boolean
+  interactive?: boolean
   onClick?: () => void
+  className?: string
 }
 
 /**
  * Animated Card Component
- * Provides elevation, hover effects, and glassmorphism options
- * Smooth spring animations on mount and hover
+ * Provides elevation, hover effects, glassmorphism options, and composite structure
+ * Smooth spring animations on mount and interactive states
+ * Supports header, body, and footer sections with visual separation
  */
 export const Card = ({
   children,
-  className,
+  variant = 'default',
+  header,
+  footer,
   hover = true,
-  glass = false,
-  onClick
+  interactive = false,
+  onClick,
+  className
 }: CardProps) => {
+  const isClickable = !!onClick || interactive
+
   return (
     <motion.div
       className={clsx(
         styles.card,
-        glass && styles.glass,
-        onClick && styles.interactive,
+        styles[`variant-${variant}`],
+        isClickable && styles.clickable,
         className
       )}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={hover && !onClick ? { y: -4 } : onClick ? { scale: 1.02 } : {}}
+      whileHover={hover && !isClickable ? { y: -4 } : isClickable ? { scale: 1.01 } : {}}
+      whileTap={isClickable ? { scale: 0.99 } : {}}
       transition={{
         type: 'spring',
         stiffness: 100,
@@ -41,15 +53,30 @@ export const Card = ({
         duration: 0.3,
       }}
       onClick={onClick}
-      role={onClick ? 'button' : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      onKeyDown={onClick ? (e) => {
+      role={isClickable ? 'button' : 'region'}
+      tabIndex={isClickable ? 0 : -1}
+      onKeyDown={isClickable ? (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
-          onClick()
+          e.preventDefault()
+          onClick?.()
         }
       } : undefined}
     >
-      {children}
+      {header && (
+        <div className={styles.header}>
+          {header}
+        </div>
+      )}
+
+      <div className={styles.body}>
+        {children}
+      </div>
+
+      {footer && (
+        <div className={styles.footer}>
+          {footer}
+        </div>
+      )}
     </motion.div>
   )
 }

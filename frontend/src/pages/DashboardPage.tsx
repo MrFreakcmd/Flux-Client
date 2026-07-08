@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { apiFetch } from '../lib/api'
-import { Card, Badge, Button } from '../components'
+import { Card, Badge, Button, PageHeader } from '../components'
 import { useScrollReveal, staggerContainerVariants, staggerItemVariants } from '../hooks'
 
 interface Server {
@@ -102,11 +102,13 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div className="stack">
-        <Card>
+        <PageHeader
+          title="Dashboard"
+          subtitle="Error loading dashboard"
+        />
+        <Card variant="elevated">
           <div>
-            <p className="eyebrow">Dashboard</p>
-            <h1>Error loading dashboard</h1>
-            <p className="hero-text">{error}</p>
+            <p>{error}</p>
           </div>
         </Card>
       </div>
@@ -116,11 +118,13 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="stack">
-        <Card>
+        <PageHeader
+          title="Dashboard"
+          subtitle="Loading your dashboard..."
+        />
+        <Card variant="elevated">
           <div>
-            <p className="eyebrow">Dashboard</p>
-            <h1>Welcome back, {user?.username || 'pilot'}.</h1>
-            <p className="hero-text">Loading your dashboard...</p>
+            <p>Loading...</p>
           </div>
         </Card>
       </div>
@@ -129,21 +133,39 @@ export default function DashboardPage() {
 
   return (
     <div className="stack">
-      {/* Hero Section */}
-      <Card glass>
-        <div>
-          <p className="eyebrow">Dashboard</p>
-          <h1>Welcome back, {user?.username || 'pilot'}.</h1>
-          <p className="hero-text">
-            You have{' '}
-            <Badge variant="primary" animated>
-              {servers.length} server{servers.length !== 1 ? 's' : ''}
-            </Badge>{' '}
-            and{' '}
-            <Badge variant="success" animated>
-              {user?.coins || '0'} coins
-            </Badge>
-          </p>
+      {/* Page Header */}
+      <PageHeader
+        title={`Welcome back, ${user?.username || 'pilot'}`}
+        subtitle="Overview of your account and servers"
+        breadcrumbs={[
+          { label: 'Home', href: '/' },
+          { label: 'Dashboard' }
+        ]}
+      />
+
+      {/* Hero Section with Stats */}
+      <Card variant="glass">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+          <div>
+            <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-tertiary)', margin: 0 }}>
+              Account Overview
+            </p>
+            <h2 style={{ margin: '0.5rem 0 0 0' }}>Quick stats</h2>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 'var(--space-md)' }}>
+            <div>
+              <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-tertiary)', margin: 0 }}>Servers</p>
+              <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 'bold', color: 'var(--color-primary)' }}>
+                {servers.length}
+              </div>
+            </div>
+            <div>
+              <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-tertiary)', margin: 0 }}>Balance</p>
+              <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 'bold', color: 'var(--color-success)' }}>
+                {user?.coins || 0}
+              </div>
+            </div>
+          </div>
         </div>
       </Card>
 
@@ -153,11 +175,12 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
+          style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}
         >
           {warnings.map((warning, idx) => (
-            <Card key={idx}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
-                <Badge variant="warning">⚠️</Badge>
+            <Card key={idx} variant="elevated">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+                <Badge variant="warning" status="busy">⚠️</Badge>
                 <span>{warning}</span>
               </div>
             </Card>
@@ -168,74 +191,99 @@ export default function DashboardPage() {
       {/* Servers & Stats Grid */}
       <motion.div
         ref={serversRef}
-        className="dashboard-grid"
+        className="content-grid two-column"
         variants={staggerContainerVariants}
         initial="hidden"
         animate={serversInView ? 'visible' : 'hidden'}
       >
         {/* Servers Card */}
         <motion.div variants={staggerItemVariants}>
-          <Card>
-            <p className="eyebrow">Servers</p>
-            <h3>Quick access</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-              {servers.length > 0 ? (
-                servers.map((server) => (
-                  <Link
-                    key={server.id}
-                    to={`/servers/${server.calagopus_uuid}`}
-                    style={{ textDecoration: 'none' }}
-                  >
-                    <Button variant="ghost" size="md" style={{ width: '100%', justifyContent: 'flex-start' }}>
-                      {server.name}
-                      {server.is_suspended && (
-                        <Badge variant="danger" size="sm">
-                          Suspended
-                        </Badge>
-                      )}
-                    </Button>
-                  </Link>
-                ))
-              ) : (
-                <p style={{ color: 'var(--color-neutral-500)' }}>No servers yet</p>
-              )}
+          <Card variant="default">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+              <div>
+                <h3 style={{ margin: 0, marginBottom: 'var(--space-sm)' }}>Servers</h3>
+                <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-tertiary)', margin: 0 }}>
+                  Quick access to your servers
+                </p>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
+                {servers.length > 0 ? (
+                  servers.map((server) => (
+                    <Link
+                      key={server.id}
+                      to={`/servers/${server.calagopus_uuid}`}
+                      style={{ textDecoration: 'none' }}
+                    >
+                      <Button variant="ghost" fullWidth>
+                        <span style={{ flex: 1, textAlign: 'left' }}>{server.name}</span>
+                        {server.is_suspended && (
+                          <Badge variant="danger" size="sm" dot>
+                            Suspended
+                          </Badge>
+                        )}
+                      </Button>
+                    </Link>
+                  ))
+                ) : (
+                  <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 'var(--space-md) 0' }}>
+                    No servers yet. Create one to get started.
+                  </p>
+                )}
+              </div>
             </div>
           </Card>
         </motion.div>
 
-        {/* Coins Card */}
+        {/* Account Card */}
         <motion.div variants={staggerItemVariants}>
-          <Card>
-            <p className="eyebrow">Account</p>
-            <h3>Balance</h3>
-            <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 'bold', color: 'var(--color-primary)' }}>
-              {user?.coins || 0}
+          <Card variant="default">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', justifyContent: 'space-between', height: '100%' }}>
+              <div>
+                <h3 style={{ margin: 0, marginBottom: 'var(--space-sm)' }}>Balance</h3>
+                <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-tertiary)', margin: 0 }}>
+                  Account balance
+                </p>
+              </div>
+              <div>
+                <div style={{ fontSize: 'var(--font-size-3xl)', fontWeight: 'bold', color: 'var(--color-primary)', marginBottom: 'var(--space-md)' }}>
+                  {user?.coins || 0}
+                </div>
+                <Link to="/billing" style={{ display: 'block' }}>
+                  <Button variant="primary" fullWidth>
+                    Top up balance
+                  </Button>
+                </Link>
+              </div>
             </div>
-            <Link to="/billing">
-              <Button variant="primary" size="sm" style={{ marginTop: 'var(--space-md)' }}>
-                Top up balance
-              </Button>
-            </Link>
           </Card>
         </motion.div>
 
         {/* Referral Card */}
         {referral && (
           <motion.div variants={staggerItemVariants}>
-            <Card>
-              <p className="eyebrow">Referral</p>
-              <h3>Your code</h3>
-              <div
-                style={{
-                  background: 'var(--color-neutral-100)',
-                  padding: 'var(--space-md)',
-                  borderRadius: 'var(--radius-md)',
-                  fontFamily: 'var(--font-family-mono)',
-                  textAlign: 'center',
-                  letterSpacing: '0.1em',
-                }}
-              >
-                {referral.code}
+            <Card variant="default">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+                <div>
+                  <h3 style={{ margin: 0, marginBottom: 'var(--space-sm)' }}>Referral</h3>
+                  <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-tertiary)', margin: 0 }}>
+                    Share your code
+                  </p>
+                </div>
+                <div
+                  style={{
+                    background: 'var(--bg-tertiary)',
+                    padding: 'var(--space-md)',
+                    borderRadius: 'var(--radius-lg)',
+                    fontFamily: 'var(--font-family-mono)',
+                    textAlign: 'center',
+                    letterSpacing: '0.1em',
+                    border: '1px solid var(--border-color)',
+                    userSelect: 'all',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {referral.code}
+                </div>
               </div>
             </Card>
           </motion.div>
@@ -246,27 +294,32 @@ export default function DashboardPage() {
       {announcements.length > 0 && (
         <motion.div
           ref={announcementsRef}
+          style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}
           variants={staggerContainerVariants}
           initial="hidden"
           animate={announcementsInView ? 'visible' : 'hidden'}
         >
-          <p className="eyebrow">News</p>
-          <h2>Latest announcements</h2>
+          <div>
+            <h2 style={{ margin: 0, marginBottom: 'var(--space-sm)' }}>Latest announcements</h2>
+            <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-tertiary)', margin: 0 }}>
+              News and updates
+            </p>
+          </div>
 
           <motion.div
-            style={{ display: 'grid', gap: 'var(--space-md)' }}
+            className="content-grid"
             variants={staggerContainerVariants}
             initial="hidden"
             animate={announcementsInView ? 'visible' : 'hidden'}
           >
-            {announcements.map((announcement, idx) => (
+            {announcements.map((announcement) => (
               <motion.div key={announcement.id} variants={staggerItemVariants}>
-                <Card>
-                  <h4>{announcement.title}</h4>
-                  <p style={{ color: 'var(--color-neutral-600)', marginTop: 'var(--space-sm)' }}>
+                <Card variant="default">
+                  <h4 style={{ margin: 0, marginBottom: 'var(--space-sm)' }}>{announcement.title}</h4>
+                  <p style={{ color: 'var(--text-secondary)', margin: '0 0 var(--space-md) 0', lineHeight: 'var(--line-height-normal)' }}>
                     {announcement.content}
                   </p>
-                  <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-neutral-400)', marginTop: 'var(--space-md)' }}>
+                  <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-muted)', margin: 0 }}>
                     {new Date(announcement.created_at).toLocaleDateString()}
                   </p>
                 </Card>
@@ -278,11 +331,21 @@ export default function DashboardPage() {
 
       {/* Store Prices */}
       {prices && prices.length > 0 && (
-        <div>
-          <p className="eyebrow">Store</p>
-          <h2>Available packages</h2>
+        <motion.div
+          style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}
+          variants={staggerContainerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+        >
+          <div>
+            <h2 style={{ margin: 0, marginBottom: 'var(--space-sm)' }}>Available packages</h2>
+            <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-tertiary)', margin: 0 }}>
+              Upgrade your account
+            </p>
+          </div>
           <motion.div
-            className="dashboard-grid"
+            className="content-grid three-column"
             variants={staggerContainerVariants}
             initial="hidden"
             whileInView="visible"
@@ -290,19 +353,25 @@ export default function DashboardPage() {
           >
             {prices.map((price) => (
               <motion.div key={price.id} variants={staggerItemVariants}>
-                <Card hover>
-                  <h3>{price.name}</h3>
-                  <div style={{ fontSize: 'var(--font-size-xl)', fontWeight: 'bold', marginTop: 'var(--space-md)' }}>
-                    ${price.price}
+                <Card variant="elevated" hover>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', height: '100%' }}>
+                    <div>
+                      <h3 style={{ margin: 0 }}>{price.name}</h3>
+                      <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 'bold', color: 'var(--color-primary)', marginTop: 'var(--space-md)' }}>
+                        ${price.price}
+                      </div>
+                    </div>
+                    <Link to="/store" style={{ marginTop: 'auto', display: 'block' }}>
+                      <Button variant="primary" fullWidth>
+                        View details
+                      </Button>
+                    </Link>
                   </div>
-                  <Link to="/store" style={{ marginTop: 'var(--space-md)', display: 'inline-block' }}>
-                    <Button variant="primary">View details</Button>
-                  </Link>
                 </Card>
               </motion.div>
             ))}
           </motion.div>
-        </div>
+        </motion.div>
       )}
     </div>
   )

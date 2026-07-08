@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { apiFetch } from '../lib/api'
-import { Card, Badge, PageTransition } from '../components'
+import { Card, Badge, PageHeader, PageTransition } from '../components'
 import { useScrollReveal, staggerContainerVariants, staggerItemVariants } from '../hooks'
 import styles from './AdminDashboardPage.module.css'
 
@@ -39,10 +39,14 @@ export default function AdminDashboardPage() {
     return (
       <PageTransition>
         <div className={styles.container}>
-          <section className={styles.hero}>
-            <p className={styles.eyebrow}>Admin Dashboard</p>
-            <h1>Loading stats...</h1>
-          </section>
+          <PageHeader
+            title="System Overview"
+            subtitle="Loading admin statistics..."
+            breadcrumbs={[
+              { label: 'Admin', href: '/admin' },
+              { label: 'Dashboard' }
+            ]}
+          />
         </div>
       </PageTransition>
     )
@@ -52,11 +56,19 @@ export default function AdminDashboardPage() {
     return (
       <PageTransition>
         <div className={styles.container}>
-          <section className={styles.hero}>
-            <p className={styles.eyebrow}>Admin Dashboard</p>
-            <h1>Error</h1>
-            <p className={styles.error}>{error}</p>
-          </section>
+          <PageHeader
+            title="System Overview"
+            subtitle="Unable to load statistics"
+            breadcrumbs={[
+              { label: 'Admin', href: '/admin' },
+              { label: 'Dashboard' }
+            ]}
+          />
+          <Card variant="default">
+            <div style={{ padding: 'var(--space-md)' }}>
+              <p style={{ color: 'var(--color-danger)', margin: 0 }}>{error}</p>
+            </div>
+          </Card>
         </div>
       </PageTransition>
     )
@@ -65,31 +77,27 @@ export default function AdminDashboardPage() {
   return (
     <PageTransition>
       <div className={styles.container}>
-        <motion.section
-          className={styles.hero}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <div>
-            <p className={styles.eyebrow}>Admin</p>
-            <h1>System Overview</h1>
-            <p className={styles.heroText}>Platform statistics and user management.</p>
-          </div>
-        </motion.section>
+        <PageHeader
+          title="System Overview"
+          subtitle="Platform statistics and user management"
+          breadcrumbs={[
+            { label: 'Admin', href: '/admin' },
+            { label: 'Dashboard' }
+          ]}
+        />
 
         {stats && (
           <>
             {/* Stats Grid */}
             <motion.section
               ref={statsRef}
-              className={styles.statsGrid}
+              className="content-grid three-column"
               variants={staggerContainerVariants}
               initial="hidden"
               animate={statsInView ? "visible" : "hidden"}
             >
               <motion.div variants={staggerItemVariants}>
-                <Card glass hover>
+                <Card variant="glass">
                   <div className={styles.statCard}>
                     <p className={styles.label}>Total Users</p>
                     <h3 className={styles.value}>{stats.total_users}</h3>
@@ -101,7 +109,7 @@ export default function AdminDashboardPage() {
               </motion.div>
 
               <motion.div variants={staggerItemVariants}>
-                <Card glass hover>
+                <Card variant="glass">
                   <div className={styles.statCard}>
                     <p className={styles.label}>Servers</p>
                     <h3 className={styles.value}>{stats.total_servers}</h3>
@@ -111,7 +119,7 @@ export default function AdminDashboardPage() {
               </motion.div>
 
               <motion.div variants={staggerItemVariants}>
-                <Card glass hover>
+                <Card variant="glass">
                   <div className={styles.statCard}>
                     <p className={styles.label}>Coins Issued</p>
                     <h3 className={styles.value}>{stats.total_coins_issued}</h3>
@@ -129,12 +137,12 @@ export default function AdminDashboardPage() {
                 animate={usersInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.4, delay: 0.2 }}
               >
-                <Card glass>
+                <Card variant="elevated">
                   <div className={styles.topUsersCard}>
                     <div className={styles.cardHeader}>
                       <div>
-                        <p className={styles.label}>Leaderboard</p>
-                        <h3>Top Coin Holders</h3>
+                        <h2 style={{ margin: 0, fontSize: 'var(--font-size-lg)' }}>Top Coin Holders</h2>
+                        <p style={{ margin: '4px 0 0 0', color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>Leaderboard</p>
                       </div>
                       <Badge variant="success">Top {stats.top_users.length}</Badge>
                     </div>

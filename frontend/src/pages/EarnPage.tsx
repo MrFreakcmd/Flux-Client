@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, FormEvent, ChangeEvent } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { apiFetch } from '../lib/api'
-import { Card, Badge, Button, Input, PageTransition } from '../components'
+import { Card, Badge, Button, Input, PageHeader, PageTransition } from '../components'
 import { useScrollReveal, staggerContainerVariants, staggerItemVariants } from '../hooks'
 import styles from './EarnPage.module.css'
 

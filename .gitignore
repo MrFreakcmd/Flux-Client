@@ -68,7 +68,9 @@ backend/alembic.ini.local
 
 #AI Shops
 .claude
+.superpowers/
 
 #testing
 frontend/tests/
 frontend/test-results/
+docs/

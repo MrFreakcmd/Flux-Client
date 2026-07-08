@@ -71,33 +71,46 @@ export default function LandingPage() {
 
   return (
     <PageTransition>
-      <main className={styles.landingPage}>
+      <main style={{ width: '100%' }}>
         {/* Hero Section */}
-        <section className={styles.hero}>
-          <motion.div
-            className={styles.heroCopy}
-            initial="hidden"
-            animate="visible"
-            variants={{
-              visible: {
-                transition: {
-                  staggerChildren: 0.1,
+        <section style={{ padding: 'var(--space-3xl) var(--space-lg)', backgroundColor: 'var(--bg-primary)', minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ maxWidth: '1280px', margin: '0 auto', width: '100%' }}>
+            <motion.div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 'var(--space-lg)',
+              }}
+              initial="hidden"
+              animate="visible"
+              variants={{
+                visible: {
+                  transition: {
+                    staggerChildren: 0.1,
+                  },
                 },
-              },
-            }}
-          >
-            <motion.p className={styles.eyebrow} variants={heroVariants}>
-              Flux Client for Calagopus
-            </motion.p>
+              }}
+            >
+              <motion.p
+                style={{ fontSize: 'var(--font-size-sm)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-accent)', margin: 0 }}
+                variants={heroVariants}
+              >
+                Flux Client for Calagopus
+              </motion.p>
 
-            <motion.h1 className={styles.title} variants={heroVariants}>
-              Run your game infrastructure with a dashboard that feels like a control room.
-            </motion.h1>
+              <motion.h1
+                style={{ fontSize: 'var(--font-size-4xl)', fontWeight: '900', lineHeight: 1.2, margin: 0, color: 'var(--text-primary)', maxWidth: '800px' }}
+                variants={heroVariants}
+              >
+                Run your game infrastructure with a dashboard that feels like a control room.
+              </motion.h1>
 
-            <motion.p className={styles.subtitle} variants={heroVariants}>
-              Discord OAuth, coin balances, server provisioning, support tickets, AFK rewards, and payment
-              validation all share one clean workspace.
-            </motion.p>
+              <motion.p
+                style={{ fontSize: 'var(--font-size-lg)', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6, maxWidth: '700px' }}
+                variants={heroVariants}
+              >
+                Discord OAuth, coin balances, server provisioning, support tickets, AFK rewards, and payment validation all share one clean workspace.
+              </motion.p>
 
             <motion.div className={styles.heroActions} variants={heroVariants}>
               <Button variant="primary" size="lg" onClick={handleLogin}>

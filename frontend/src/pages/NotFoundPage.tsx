@@ -40,24 +40,38 @@ const numberVariants = {
 export default function NotFoundPage() {
   return (
     <PageTransition>
-      <main className={styles.notFoundPage}>
+      <main style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: 'var(--space-lg)' }}>
         <motion.div
-          className={styles.container}
+          style={{ textAlign: 'center', maxWidth: '600px' }}
           variants={containerVariants}
           initial="hidden"
           animate="visible"
         >
-          <motion.div className={styles.number} variants={numberVariants}>
+          <motion.div
+            style={{ fontSize: '120px', fontWeight: '900', color: 'var(--color-primary)', marginBottom: 'var(--space-lg)', lineHeight: 1 }}
+            variants={numberVariants}
+          >
             404
           </motion.div>
 
-          <motion.h1 variants={itemVariants}>The page drifted off course.</motion.h1>
+          <motion.h1
+            style={{ margin: '0 0 var(--space-md) 0', fontSize: 'var(--font-size-3xl)', fontWeight: '700' }}
+            variants={itemVariants}
+          >
+            The page drifted off course.
+          </motion.h1>
 
-          <motion.p className={styles.description} variants={itemVariants}>
+          <motion.p
+            style={{ margin: '0 0 var(--space-lg) 0', color: 'var(--text-secondary)', fontSize: 'var(--font-size-md)', lineHeight: 1.6 }}
+            variants={itemVariants}
+          >
             The route you requested does not exist in Flux Client. Let's get you back on track.
           </motion.p>
 
-          <motion.div className={styles.actions} variants={itemVariants}>
+          <motion.div
+            style={{ display: 'flex', gap: 'var(--space-md)', justifyContent: 'center', flexWrap: 'wrap' }}
+            variants={itemVariants}
+          >
             <Link to="/dashboard">
               <Button variant="primary" size="lg">
                 Return to Dashboard

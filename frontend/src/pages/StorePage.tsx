@@ -1,7 +1,7 @@
 import { useEffect, useState, FormEvent, ChangeEvent } from 'react'
 import { motion } from 'framer-motion'
 import { apiFetch } from '../lib/api'
-import { Card, Badge, Button, Input, PageTransition } from '../components'
+import { Card, Badge, Button, Input, PageHeader, PageTransition } from '../components'
 import { useScrollReveal, staggerContainerVariants, staggerItemVariants } from '../hooks'
 import styles from './StorePage.module.css'
 
@@ -127,11 +127,15 @@ export default function StorePage() {
   if (loading) {
     return (
       <PageTransition>
-        <div className={styles.container}>
-          <section className={styles.hero}>
-            <p className={styles.eyebrow}>Store</p>
-            <h1>Loading store...</h1>
-          </section>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)', width: '100%', maxWidth: '1280px', margin: '0 auto', padding: '0 var(--space-md)' }}>
+          <PageHeader
+            title="Store"
+            subtitle="Loading store inventory..."
+            breadcrumbs={[
+              { label: 'Home', href: '/' },
+              { label: 'Store' }
+            ]}
+          />
         </div>
       </PageTransition>
     )
@@ -139,22 +143,15 @@ export default function StorePage() {
 
   return (
     <PageTransition>
-      <div className={styles.container}>
-        {/* Hero Section */}
-        <motion.section
-          className={styles.hero}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <div>
-            <p className={styles.eyebrow}>Store</p>
-            <h1>Upgrade your infrastructure</h1>
-            <p className={styles.heroText}>
-              Purchase additional CPU, memory, disk, and server slots.
-            </p>
-          </div>
-        </motion.section>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)', width: '100%', maxWidth: '1280px', margin: '0 auto', padding: '0 var(--space-md)' }}>
+        <PageHeader
+          title="Store"
+          subtitle="Purchase additional CPU, memory, disk, and server slots"
+          breadcrumbs={[
+            { label: 'Home', href: '/' },
+            { label: 'Store' }
+          ]}
+        />
 
         {/* Messages */}
         {message && (
@@ -164,9 +161,9 @@ export default function StorePage() {
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}
           >
-            <Card>
-              <div className={message.includes('failed') || message.includes('Failed') ? styles.errorCard : styles.successCard}>
-                <p className={styles.messageText}>{message}</p>
+            <Card variant={message.includes('failed') || message.includes('Failed') ? 'default' : 'default'}>
+              <div style={{ padding: 'var(--space-md)', color: message.includes('failed') || message.includes('Failed') ? 'var(--color-danger)' : 'var(--color-success)' }}>
+                <p style={{ margin: 0 }}>{message}</p>
               </div>
             </Card>
           </motion.div>
@@ -180,52 +177,51 @@ export default function StorePage() {
             animate={pricesInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.4 }}
           >
-            <Card glass>
-              <div className={styles.pricingCard}>
-                <div className={styles.cardHeader}>
-                  <div>
-                    <p className={styles.label}>Available Plans</p>
-                    <h3>Pricing Options</h3>
-                  </div>
-                  <Badge variant="primary">{prices.length} plans</Badge>
+            <Card variant="glass">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-lg)', paddingBottom: 'var(--space-lg)', borderBottom: '1px solid var(--border-color)' }}>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: 'var(--font-size-lg)' }}>Pricing Options</h2>
+                  <p style={{ margin: '4px 0 0 0', color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>Available Plans</p>
                 </div>
+                <Badge variant="primary">{prices.length} plans</Badge>
+              </div>
 
-                <div className={styles.priceGrid}>
-                  {prices.map((price, idx) => (
-                    <motion.div
-                      key={price.id}
-                      className={styles.priceCard}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={pricesInView ? { opacity: 1, y: 0 } : {}}
-                      transition={{ delay: idx * 0.1 }}
-                    >
-                      <div className={styles.priceHeader}>
-                        <h4>{price.name}</h4>
-                        <div className={styles.priceTag}>
-                          <span className={styles.amount}>{price.price}</span>
-                          <span className={styles.currency}>{price.currency}</span>
+              <div className="content-grid three-column">
+                {prices.map((price, idx) => (
+                  <motion.div
+                    key={price.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={pricesInView ? { opacity: 1, y: 0 } : {}}
+                    transition={{ delay: idx * 0.1 }}
+                  >
+                    <Card variant="elevated">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-md)' }}>
+                        <h3 style={{ margin: 0, fontSize: 'var(--font-size-md)' }}>{price.name}</h3>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: 'var(--font-size-lg)', fontWeight: '700', color: 'var(--color-primary)' }}>{price.price}</div>
+                          <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)' }}>{price.currency}</div>
                         </div>
                       </div>
 
-                      <p className={styles.priceDesc}>{price.description}</p>
+                      <p style={{ margin: '0 0 var(--space-md) 0', color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>{price.description}</p>
 
-                      <div className={styles.resources}>
-                        <div className={styles.resourceItem}>
-                          <span className={styles.resourceLabel}>CPU</span>
-                          <span className={styles.resourceValue}>+{price.resources.cpu}%</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>CPU</span>
+                          <span style={{ fontWeight: '600' }}>+{price.resources.cpu}%</span>
                         </div>
-                        <div className={styles.resourceItem}>
-                          <span className={styles.resourceLabel}>Memory</span>
-                          <span className={styles.resourceValue}>+{price.resources.memory}MB</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>Memory</span>
+                          <span style={{ fontWeight: '600' }}>+{price.resources.memory}MB</span>
                         </div>
-                        <div className={styles.resourceItem}>
-                          <span className={styles.resourceLabel}>Disk</span>
-                          <span className={styles.resourceValue}>+{price.resources.disk}MB</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>Disk</span>
+                          <span style={{ fontWeight: '600' }}>+{price.resources.disk}MB</span>
                         </div>
                       </div>
-                    </motion.div>
-                  ))}
-                </div>
+                    </Card>
+                  </motion.div>
+                ))}
               </div>
             </Card>
           </motion.div>
@@ -234,23 +230,21 @@ export default function StorePage() {
         {/* Forms Section */}
         <motion.section
           ref={formsRef}
-          className={styles.formsGrid}
+          className="content-grid two-column"
           variants={staggerContainerVariants}
           initial="hidden"
           animate={formsInView ? "visible" : "hidden"}
         >
           {/* Global Upgrade */}
           <motion.div variants={staggerItemVariants}>
-            <Card glass hover>
-              <div className={styles.formCard}>
-                <div className={styles.cardHeader}>
-                  <div>
-                    <p className={styles.label}>Account-wide</p>
-                    <h3>Global Upgrade</h3>
-                  </div>
+            <Card variant="glass">
+              <div>
+                <div style={{ marginBottom: 'var(--space-lg)', paddingBottom: 'var(--space-lg)', borderBottom: '1px solid var(--border-color)' }}>
+                  <h3 style={{ margin: 0, fontSize: 'var(--font-size-md)' }}>Global Upgrade</h3>
+                  <p style={{ margin: '4px 0 0 0', color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>Account-wide</p>
                 </div>
 
-                <form onSubmit={buyGlobalLimits} className={styles.form}>
+                <form onSubmit={buyGlobalLimits} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
                   <Input
                     type="number"
                     placeholder="CPU Delta (%)"
@@ -296,13 +290,13 @@ export default function StorePage() {
                     variant="primary"
                     size="md"
                     isLoading={globalLoading}
-                    className={styles.submitButton}
+                    fullWidth
                   >
                     Upgrade Global Limits
                   </Button>
                 </form>
 
-                <p className={styles.formHint}>
+                <p style={{ margin: 'var(--space-md) 0 0 0', fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>
                   Increase your account-wide resource limits.
                 </p>
               </div>
@@ -311,32 +305,28 @@ export default function StorePage() {
 
           {/* Server-Specific Upgrade */}
           <motion.div variants={staggerItemVariants}>
-            <Card glass hover>
-              <div className={styles.formCard}>
-                <div className={styles.cardHeader}>
-                  <div>
-                    <p className={styles.label}>Per-Server</p>
-                    <h3>Server Upgrade</h3>
-                  </div>
+            <Card variant="glass">
+              <div>
+                <div style={{ marginBottom: 'var(--space-lg)', paddingBottom: 'var(--space-lg)', borderBottom: '1px solid var(--border-color)' }}>
+                  <h3 style={{ margin: 0, fontSize: 'var(--font-size-md)' }}>Server Upgrade</h3>
+                  <p style={{ margin: '4px 0 0 0', color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>Per-Server</p>
                 </div>
 
-                <form onSubmit={buyServerLimits} className={styles.form}>
-                  <div className={styles.selectWrapper}>
-                    <select
-                      value={serverForm.server_uuid}
-                      onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-                        setServerForm({ ...serverForm, server_uuid: e.target.value })
-                      }
-                      className={styles.select}
-                    >
-                      <option value="">Select a server</option>
-                      {servers.map((server) => (
-                        <option key={server.id} value={server.calagopus_uuid}>
-                          {server.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <form onSubmit={buyServerLimits} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+                  <select
+                    value={serverForm.server_uuid}
+                    onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+                      setServerForm({ ...serverForm, server_uuid: e.target.value })
+                    }
+                    style={{ padding: 'var(--space-sm)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', fontSize: 'var(--font-size-base)', color: 'var(--text-primary)', backgroundColor: 'var(--bg-secondary)' }}
+                  >
+                    <option value="">Select a server</option>
+                    {servers.map((server) => (
+                      <option key={server.id} value={server.calagopus_uuid}>
+                        {server.name}
+                      </option>
+                    ))}
+                  </select>
 
                   <Input
                     type="number"
@@ -383,14 +373,14 @@ export default function StorePage() {
                     variant="primary"
                     size="md"
                     isLoading={serverLoading}
-                    className={styles.submitButton}
+                    fullWidth
                     disabled={!serverForm.server_uuid}
                   >
                     Upgrade Server
                   </Button>
                 </form>
 
-                <p className={styles.formHint}>
+                <p style={{ margin: 'var(--space-md) 0 0 0', fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>
                   Increase limits for a specific server.
                 </p>
               </div>

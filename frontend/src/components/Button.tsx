@@ -3,14 +3,17 @@ import { motion } from 'framer-motion'
 import clsx from 'clsx'
 import styles from './Button.module.css'
 
-type Variant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'success' | 'warning'
+type Variant = 'primary' | 'secondary' | 'danger' | 'success' | 'warning' | 'ghost' | 'outline'
 type Size = 'sm' | 'md' | 'lg'
+type IconPosition = 'start' | 'end'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant
   size?: Size
   isLoading?: boolean
   icon?: ReactNode
+  iconPosition?: IconPosition
+  fullWidth?: boolean
   children: ReactNode
 }
 
@@ -18,6 +21,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  * Animated Button Component
  * Provides micro-interactions with smooth spring animations
  * Fully accessible with keyboard navigation and ARIA support
+ * Supports 7 variants, 3 sizes, icon positioning, and full width layouts
  */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
@@ -27,6 +31,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       isLoading = false,
       disabled = false,
       icon,
+      iconPosition = 'start',
+      fullWidth = false,
       children,
       className,
       ...props
@@ -42,14 +48,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           styles.button,
           styles[`variant-${variant}`],
           styles[`size-${size}`],
+          fullWidth && styles.fullWidth,
           className
         )}
-        whileHover={!isDisabled ? { scale: 1.05, y: -2 } : {}}
-        whileTap={!isDisabled ? { scale: 0.95 } : {}}
+        whileHover={!isDisabled ? { scale: 1.02, y: -1 } : {}}
+        whileTap={!isDisabled ? { scale: 0.98 } : {}}
         transition={{
           type: 'spring',
-          stiffness: 400,
-          damping: 17,
+          stiffness: 350,
+          damping: 25,
+          duration: 0.2,
         }}
         disabled={isDisabled}
         aria-busy={isLoading}
@@ -59,10 +67,19 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {isLoading ? (
           <span className={styles.loader} aria-label="Loading" />
         ) : (
-          <>
-            {icon && <span className={styles.icon}>{icon}</span>}
-            <span>{children}</span>
-          </>
+          <span className={styles.content}>
+            {icon && iconPosition === 'start' && (
+              <span className={styles.icon} aria-hidden="true">
+                {icon}
+              </span>
+            )}
+            <span className={styles.label}>{children}</span>
+            {icon && iconPosition === 'end' && (
+              <span className={styles.icon} aria-hidden="true">
+                {icon}
+              </span>
+            )}
+          </span>
         )}
       </motion.button>
     )

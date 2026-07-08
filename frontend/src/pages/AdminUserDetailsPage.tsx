@@ -2,7 +2,7 @@ import { useEffect, useState, ChangeEvent, FormEvent } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { apiFetch } from '../lib/api'
-import { Button, Card, Input, Badge, PageTransition } from '../components'
+import { Button, Card, Input, Badge, PageHeader, PageTransition } from '../components'
 import { useAriaLive } from '../hooks/useA11y'
 import styles from './AdminUserDetailsPage.module.css'
 

@@ -1,7 +1,7 @@
 import { useEffect, useState, ChangeEvent, FormEvent } from 'react'
 import { motion } from 'framer-motion'
 import { apiFetch } from '../lib/api'
-import { Button, Card, Input, Badge, PageTransition, Picture } from '../components'
+import { Button, Card, Input, Badge, PageHeader, PageTransition, Picture } from '../components'
 import { useScrollReveal, staggerContainerVariants, staggerItemVariants } from '../hooks'
 import { useAriaLive } from '../hooks/useA11y'
 import styles from './ImagesPage.module.css'

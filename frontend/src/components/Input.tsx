@@ -1,60 +1,93 @@
-import { forwardRef, ReactNode } from 'react'
+import { forwardRef, InputHTMLAttributes, ReactNode, useId } from 'react'
 import clsx from 'clsx'
 import styles from './Input.module.css'
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+type Variant = 'default' | 'ghost'
+type IconPosition = 'start' | 'end'
+
+interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string
   error?: string
-  helpText?: string
+  success?: boolean
   icon?: ReactNode
-  isRequired?: boolean
+  iconPosition?: IconPosition
+  variant?: Variant
+  helpText?: string
 }
 
 /**
  * Input Component
- * Accessible form input with label, error, and help text support
- * Proper ARIA attributes for screen readers
+ * Provides validation states, icons, labels, and accessible form support
+ * Clear visual feedback for all input states (error, success, disabled)
+ * Supports two variants and icon positioning for flexible form layouts
  */
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   (
     {
       label,
       error,
-      helpText,
+      success = false,
       icon,
-      isRequired = false,
-      id,
+      iconPosition = 'end',
+      variant = 'default',
+      helpText,
       className,
-      type = 'text',
+      disabled = false,
       ...props
     },
     ref
   ) => {
-    const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`
+    const id = useId()
+    const inputId = props.id || id
     const errorId = error ? `${inputId}-error` : undefined
     const helpId = helpText ? `${inputId}-help` : undefined
 
     return (
-      <div className={styles.container}>
+      <div className={clsx(styles.wrapper, className)}>
         {label && (
           <label htmlFor={inputId} className={styles.label}>
             {label}
-            {isRequired && <span className={styles.required} aria-label="required">*</span>}
+            {props.required && <span className={styles.required}>*</span>}
           </label>
         )}
 
-        <div className={clsx(styles.inputWrapper, error && styles.hasError)}>
-          {icon && <span className={styles.icon}>{icon}</span>}
+        <div
+          className={clsx(
+            styles.inputWrapper,
+            styles[`variant-${variant}`],
+            icon && styles[`icon-${iconPosition}`],
+            error && styles.hasError,
+            success && styles.hasSuccess,
+            disabled && styles.disabled
+          )}
+        >
+          {icon && iconPosition === 'start' && (
+            <span className={clsx(styles.icon, styles.iconStart)} aria-hidden="true">
+              {icon}
+            </span>
+          )}
+
           <input
             ref={ref}
             id={inputId}
-            type={type}
-            className={clsx(styles.input, className)}
+            className={styles.input}
+            disabled={disabled}
             aria-invalid={!!error}
             aria-describedby={[errorId, helpId].filter(Boolean).join(' ') || undefined}
-            required={isRequired}
             {...props}
           />
+
+          {icon && iconPosition === 'end' && (
+            <span className={clsx(styles.icon, styles.iconEnd)} aria-hidden="true">
+              {icon}
+            </span>
+          )}
+
+          {success && !error && (
+            <span className={clsx(styles.icon, styles.iconEnd, styles.successIcon)} aria-hidden="true">
+              ✓
+            </span>
+          )}
         </div>
 
         {error && (
@@ -74,3 +107,4 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 )
 
 Input.displayName = 'Input'
+

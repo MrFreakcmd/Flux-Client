@@ -3,37 +3,53 @@ import clsx from 'clsx'
 import styles from './Badge.module.css'
 import { ReactNode } from 'react'
 
-type Variant = 'primary' | 'secondary' | 'success' | 'warning' | 'danger'
+type Variant = 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info'
 type Size = 'sm' | 'md' | 'lg'
+type Status = 'online' | 'offline' | 'idle' | 'busy'
 
 interface BadgeProps {
   children: ReactNode
   variant?: Variant
   size?: Size
-  className?: string
+  status?: Status
+  dot?: boolean
   animated?: boolean
+  className?: string
 }
 
 /**
  * Badge Component
- * Displays labels, tags, and status indicators
- * Optional entrance animation
+ * Displays labels, tags, status indicators, and color-coded information
+ * Supports animated entrance and status-based styling with visual indicators
  */
 export const Badge = ({
   children,
   variant = 'primary',
   size = 'md',
-  className,
+  status,
+  dot = false,
   animated = true,
+  className,
 }: BadgeProps) => {
   const content = (
-    <span className={clsx(
-      styles.badge,
-      styles[`variant-${variant}`],
-      styles[`size-${size}`],
-      className
-    )}>
-      {children}
+    <span
+      className={clsx(
+        styles.badge,
+        styles[`variant-${variant}`],
+        styles[`size-${size}`],
+        status && styles[`status-${status}`],
+        className
+      )}
+      data-status={status}
+      role={status ? 'status' : 'label'}
+    >
+      {dot && status && (
+        <span
+          className={clsx(styles.dot, styles[`dot-${status}`])}
+          aria-hidden="true"
+        />
+      )}
+      <span className={styles.label}>{children}</span>
     </span>
   )
 
@@ -41,11 +57,12 @@ export const Badge = ({
 
   return (
     <motion.span
-      initial={{ opacity: 0, scale: 0.95 }}
+      initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
     >
       {content}
     </motion.span>
   )
 }
+
