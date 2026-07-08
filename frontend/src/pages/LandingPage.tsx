@@ -122,7 +122,9 @@ export default function LandingPage() {
             </motion.div>
           </motion.div>
 
-          {/* Floating Stats */}
+        </div>
+
+        {/* Floating Stats */}
           <motion.div
             className={styles.heroAside}
             initial="hidden"
